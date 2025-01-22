@@ -323,7 +323,7 @@ func (m *model) makeView() string {
 				lipgloss.Top,
 				lipgloss.JoinHorizontal(
 					lipgloss.Top,
-					lipgloss.JoinVertical(lipgloss.Top, listPanel, configPanel),
+					lipgloss.JoinVertical(lipgloss.Top, statePanel, listPanel, configPanel),
 					lipgloss.JoinVertical(lipgloss.Top, lipgloss.JoinHorizontal(lipgloss.Left,
 						contentPanel,
 						reviewPanel,
@@ -362,7 +362,7 @@ func (m *model) makeView() string {
 				lipgloss.Top,
 				lipgloss.JoinHorizontal(
 					lipgloss.Top,
-					lipgloss.JoinVertical(lipgloss.Top, listPanel, configPanel),
+					lipgloss.JoinVertical(lipgloss.Top, statePanel, listPanel, configPanel),
 					lipgloss.JoinVertical(lipgloss.Top, lipgloss.JoinHorizontal(lipgloss.Left,
 						contentPanel,
 						reviewPanel,
