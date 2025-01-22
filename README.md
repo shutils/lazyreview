@@ -5,10 +5,20 @@ Terminal UI for code review with ai
 
 `lazyreview` is a code review tool that uses GPT-4o to generate code reviews.
 
+## Image
+
+![image](https://private-user-images.githubusercontent.com/100141359/405655010-246c98b7-f4fa-42b3-b3e2-06830aa42539.PNG?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3Mzc1NTU5NzMsIm5iZiI6MTczNzU1NTY3MywicGF0aCI6Ii8xMDAxNDEzNTkvNDA1NjU1MDEwLTI0NmM5OGI3LWY0ZmEtNDJiMy1iM2UyLTA2ODMwYWE0MjUzOS5QTkc_WC1BbXotQWxnb3JpdGhtPUFXUzQtSE1BQy1TSEEyNTYmWC1BbXotQ3JlZGVudGlhbD1BS0lBVkNPRFlMU0E1M1BRSzRaQSUyRjIwMjUwMTIyJTJGdXMtZWFzdC0xJTJGczMlMkZhd3M0X3JlcXVlc3QmWC1BbXotRGF0ZT0yMDI1MDEyMlQxNDIxMTNaJlgtQW16LUV4cGlyZXM9MzAwJlgtQW16LVNpZ25hdHVyZT05YzdhNzc3MmRiY2U3OWRkNGFiMmNlMGUzMmMxOTUwMjVkYTE5NjJlYTNkN2VkYzM1ZmU4MjJhMjFmNWM4ZTI4JlgtQW16LVNpZ25lZEhlYWRlcnM9aG9zdCJ9.KNTP2O5jrDyt33JKyKA5xvi7JeBJMm7G5xxsQsilKNo)
+
 ## Installation
 
 ```sh
-go install github.com/shutils/lazyreview
+go install github.com/shutils/lazyreview@latest
+```
+
+If you want use unstable version, run the following command:
+
+```sh
+go install github.com/shutils/lazyreview@dev
 ```
 
 ## Usage
