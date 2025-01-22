@@ -114,6 +114,7 @@ func (m *model) reviewContent() tea.Cmd {
 				PromptTokens:     promptToken,
 				CompletionTokens: completionTokens,
 			}
+			m.UpdateState()
 			state.SaveState(m.stateFile, m.uiState)
 		}
 		return reviewMsg{

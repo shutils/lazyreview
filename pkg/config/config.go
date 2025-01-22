@@ -12,25 +12,32 @@ import (
 	"github.com/adrg/xdg"
 )
 
+// AI model cost
+// $/M token
+type ModelCost struct {
+	Input, Output float64
+}
+
 // Configファイル情報
 type Config struct {
-	ConfigPath    string   `toml:"-"`
-	Key           string   `toml:"key"`
-	Endpoint      string   `toml:"endpoint"`
-	Version       string   `toml:"version"`
-	Model         string   `toml:"model"`
-	Target        string   `toml:"target"`
-	Output        string   `toml:"output"`
-	State         string   `toml:"state"`
-	Ignores       []string `toml:"ignores"`
-	Prompt        string   `toml:"prompt"`
-	Type          string   `toml:"type"`
-	Collector     string   `toml:"collector"`
-	Previewer     string   `toml:"previewer"`
-	Glamour       string   `toml:"glamour"`
-	MaxTokens     int      `toml:"max_tokens"`
-	TmpReviewPath string   `toml:"-"`
-	Opener        string   `toml:"opener"`
+	ConfigPath    string    `toml:"-"`
+	Key           string    `toml:"key"`
+	Endpoint      string    `toml:"endpoint"`
+	Version       string    `toml:"version"`
+	Model         string    `toml:"model"`
+	ModelCost     ModelCost `toml:"modelCost"`
+	Target        string    `toml:"target"`
+	Output        string    `toml:"output"`
+	State         string    `toml:"state"`
+	Ignores       []string  `toml:"ignores"`
+	Prompt        string    `toml:"prompt"`
+	Type          string    `toml:"type"`
+	Collector     string    `toml:"collector"`
+	Previewer     string    `toml:"previewer"`
+	Glamour       string    `toml:"glamour"`
+	MaxTokens     int       `toml:"max_tokens"`
+	TmpReviewPath string    `toml:"-"`
+	Opener        string    `toml:"opener"`
 }
 
 var c Config

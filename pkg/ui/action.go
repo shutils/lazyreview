@@ -129,6 +129,10 @@ func (m *model) FocusConfigSummaryPanel() (tea.Model, tea.Cmd) {
 	return m.focusPanel(ConfigSummaryPanelFocus)
 }
 
+func (m *model) FocusStatePanel() (tea.Model, tea.Cmd) {
+	return m.focusPanel(StatePanelFocus)
+}
+
 func (m *model) InstantPromptHistoryPrev() (tea.Model, tea.Cmd) {
 	if m.curHistoryIndex-1 >= 0 && len(m.uiState.PromptHistory) > 0 {
 		m.instantPromptPanel.SetValue(m.uiState.PromptHistory[m.curHistoryIndex-1])
