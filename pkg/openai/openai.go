@@ -38,7 +38,7 @@ func NewClient(conf config.Config) Client {
 }
 
 // ChatGPT API呼び出し
-func (c Client) Getreviewfromchatgpt(content string, conf config.Config) (string, error) {
+func (c Client) Getreviewfromchatgpt(content string, conf config.Config) (*ai.ChatCompletion, error) {
 	prompt := "you are a code reviewer. return the response in japanese."
 	if conf.Prompt != "" {
 		prompt = conf.Prompt
@@ -47,11 +47,11 @@ func (c Client) Getreviewfromchatgpt(content string, conf config.Config) (string
 }
 
 // ChatGPT API呼び出し
-func (c Client) GetReviewFromChatGPTWithPrompt(content string, conf config.Config, prompt string) (string, error) {
+func (c Client) GetReviewFromChatGPTWithPrompt(content string, conf config.Config, prompt string) (*ai.ChatCompletion, error) {
 	return reviewFromChatGPT(c, content, conf, prompt)
 }
 
-func reviewFromChatGPT(c Client, content string, conf config.Config, prompt string) (string, error) {
+func reviewFromChatGPT(c Client, content string, conf config.Config, prompt string) (*ai.ChatCompletion, error) {
 	maxTokens := 1000
 	if conf.MaxTokens != 0 {
 		maxTokens = conf.MaxTokens
@@ -66,7 +66,7 @@ func reviewFromChatGPT(c Client, content string, conf config.Config, prompt stri
 	})
 
 	if err != nil {
-		return "", err
+		return review, err
 	}
-	return review.Choices[0].Message.Content, nil
+	return review, nil
 }

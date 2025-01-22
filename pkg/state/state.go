@@ -5,10 +5,32 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strconv"
+
+	"github.com/shutils/lazyreview/pkg/config"
 )
+
+type Usage struct {
+	PromptTokens, CompletionTokens int64
+}
 
 type State struct {
 	PromptHistory []string `json:"promptHistory"`
+	Usage         Usage    `json:"usage"`
+}
+
+func (s *State) ShowUsage(cost config.ModelCost) string {
+	if cost.Input == 0 || cost.Output == 0 {
+		return ""
+	}
+	return "Cost: $" + strconv.FormatFloat(float64(s.Usage.PromptTokens)*(cost.Input)+float64(s.Usage.CompletionTokens)*(cost.Output), 'f', -1, 64)
+}
+
+func (s *State) ShowUsedToken() string {
+	title := "Used tokens:"
+	inputStr := "  Input: " + strconv.Itoa(int(s.Usage.PromptTokens))
+	outputStr := "  Output: " + strconv.Itoa(int(s.Usage.CompletionTokens))
+	return title + "\n" + inputStr + "\n" + outputStr
 }
 
 func LoadState(stateFilePath string) State {

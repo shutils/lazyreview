@@ -28,6 +28,8 @@ type model struct {
 	instantPromptPanel  textarea.Model
 	configSummaryPanel  viewport.Model
 	configContentPanel  viewport.Model
+	statePanel          viewport.Model
+	stateDetailPanel    viewport.Model
 	reviewList          []reviewInfo
 	targetDir           string
 	outputFile          string
@@ -46,8 +48,10 @@ type model struct {
 	reviewKeyMap        reviewKeyMap
 	promptKeyMap        promptKeyMap
 	configSummaryKeyMap configSummaryKeyMap
+	stateKeyMap         stateKeyMap
 	uiState             state.State
 	curHistoryIndex     int
+	state               state.State
 }
 
 func NewUi(conf config.Config, client openai.Client) model {
@@ -69,6 +73,8 @@ func NewUi(conf config.Config, client openai.Client) model {
 		instantPromptPanel:  instantPromptPanel,
 		configSummaryPanel:  configPanel,
 		configContentPanel:  configContentPanel,
+		statePanel:          viewport.New(0, 0),
+		stateDetailPanel:    viewport.New(0, 0),
 		reviewList:          []reviewInfo{},
 		targetDir:           conf.Target,
 		outputFile:          conf.Output,
@@ -86,9 +92,12 @@ func NewUi(conf config.Config, client openai.Client) model {
 		reviewKeyMap:        GetReviewKeymap(),
 		promptKeyMap:        GetPromptKeymap(),
 		configSummaryKeyMap: GetConfigSummaryKeymap(),
+		stateKeyMap:         GetStateKeymap(),
 		uiState:             state.LoadState(conf.State),
 		curHistoryIndex:     0,
+		state:               state.State{},
 	}
+	m.UpdateState()
 	m.curHistoryIndex = len(m.uiState.PromptHistory)
 	m.loadReviews()
 	m.list.SetItems(getItems(m.conf, m.reviewList))
@@ -132,6 +141,13 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.reviewPanel.SetContent(msg.content)
 			m.onChangeListSelectedItem()
 		}
+		cmd = func() tea.Msg {
+			return reviewStackMsg{
+				param:     msg.param,
+				operation: Remove,
+			}
+		}
+		m.UpdateState()
 		return m, func() tea.Msg {
 			return reviewStackMsg{
 				param:     msg.param,
@@ -187,4 +203,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m model) View() string {
 	return m.makeView()
+}
+
+func (m *model) UpdateState() (tea.Model, tea.Cmd) {
+	m.state = state.LoadState(m.stateFile)
+	m.statePanel.SetContent(m.state.ShowUsage(m.conf.ModelCost))
+	m.stateDetailPanel.SetContent(m.state.ShowUsedToken())
+	return m, nil
 }
