@@ -1,0 +1,74 @@
+package ui
+
+import (
+	"github.com/charmbracelet/bubbles/list"
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/shutils/lazyreview/pkg/config"
+)
+
+func (m *model) onChangeListSelectedItem() (tea.Model, tea.Cmd) {
+	selectedItem, ok := m.list.SelectedItem().(listItem)
+	reviewContent := "No review"
+	itemContent := ""
+	if ok && m.getReviewIndex(selectedItem.param) != -1 {
+		reviewContent = getRendered(m.reviewList[m.getReviewIndex(selectedItem.param)].Review, m.conf.Glamour, m.reviewPanel.Width)
+	}
+	if m.conf.Previewer != "" {
+		itemContent = customPreviewer(m.conf.Previewer, selectedItem.param)
+	} else {
+		itemContent = defaultPreviewer(selectedItem.param)
+	}
+	m.reviewPanel.SetContent(reviewContent)
+	m.contentPanel.SetContent(itemContent)
+	return m, nil
+}
+
+// Returns a index of the item with the given param
+func findIndex(items []list.Item, param string) int {
+	for i, item := range items {
+		if item.(listItem).param == param {
+			return i
+		}
+	}
+	return -1
+}
+
+func getItems(conf config.Config, reviewList []reviewInfo) []list.Item {
+	var items []list.Item
+
+	if conf.Collector != "" {
+		items = customCollector(conf)
+	} else {
+		items = defaultItemCollector(conf)
+	}
+
+	reviewStateMap := make(map[string]string)
+	for _, review := range reviewList {
+		reviewStateMap[review.Param] = review.State
+	}
+
+	for i, item := range items {
+		_item, ok := item.(listItem)
+		if !ok {
+			continue
+		}
+
+		title := _item.Title()
+		if state, exists := reviewStateMap[_item.Description()]; exists {
+			if state == "finish" {
+				title = "☑ " + title
+			} else {
+				title = "☐ " + title
+			}
+		} else {
+			title = "☐ " + title
+		}
+
+		items[i] = listItem{
+			title: title,
+			param: _item.Description(),
+		}
+	}
+
+	return items
+}
