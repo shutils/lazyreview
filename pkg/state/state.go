@@ -7,8 +7,13 @@ import (
 	"path/filepath"
 )
 
+type Usage struct {
+	PromptTokens, CompletionTokens int64
+}
+
 type State struct {
 	PromptHistory []string `json:"promptHistory"`
+	Usage         Usage    `json:"usage"`
 }
 
 func LoadState(stateFilePath string) State {

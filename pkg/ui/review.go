@@ -7,6 +7,7 @@ import (
 	"os"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/openai/openai-go"
 	state "github.com/shutils/lazyreview/pkg/state"
 )
 
@@ -83,6 +84,7 @@ func (m *model) reviewContent() tea.Cmd {
 		selectedItem, ok := m.list.SelectedItem().(listItem)
 
 		var (
+			chat   *openai.ChatCompletion
 			review string
 			err    error
 		)
@@ -96,15 +98,23 @@ func (m *model) reviewContent() tea.Cmd {
 			}
 
 			if m.instantPrompt == "" {
-				review, err = m.client.Getreviewfromchatgpt(content, m.conf)
+				chat, err = m.client.Getreviewfromchatgpt(content, m.conf)
 			} else {
-				review, err = m.client.GetReviewFromChatGPTWithPrompt(content, m.conf, m.instantPrompt)
-				m.uiState.PromptHistory = append(m.uiState.PromptHistory, m.instantPrompt)
-				state.SaveState(m.stateFile, m.uiState)
+				chat, err = m.client.GetReviewFromChatGPTWithPrompt(content, m.conf, m.instantPrompt)
 			}
 			if err != nil {
 				review = fmt.Sprintf("Failed to get review: %v", err)
+			} else {
+				review = chat.Choices[0].Message.Content
 			}
+			m.uiState.PromptHistory = append(m.uiState.PromptHistory, m.instantPrompt)
+			promptToken := m.uiState.Usage.PromptTokens + chat.Usage.PromptTokens
+			completionTokens := m.uiState.Usage.CompletionTokens + chat.Usage.CompletionTokens
+			m.uiState.Usage = state.Usage{
+				PromptTokens:     promptToken,
+				CompletionTokens: completionTokens,
+			}
+			state.SaveState(m.stateFile, m.uiState)
 		}
 		return reviewMsg{
 			param:   selectedItem.param,
