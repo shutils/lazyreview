@@ -107,7 +107,10 @@ func (m *model) reviewContent() tea.Cmd {
 			} else {
 				review = chat.Choices[0].Message.Content
 			}
-			m.uiState.PromptHistory = append(m.uiState.PromptHistory, m.instantPrompt)
+
+			if m.instantPrompt != "" {
+				m.uiState.PromptHistory = append(m.uiState.PromptHistory, m.instantPrompt)
+			}
 			promptToken := m.uiState.Usage.PromptTokens + chat.Usage.PromptTokens
 			completionTokens := m.uiState.Usage.CompletionTokens + chat.Usage.CompletionTokens
 			m.uiState.Usage = state.Usage{
