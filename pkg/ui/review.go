@@ -8,7 +8,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/openai/openai-go"
-	state "github.com/shutils/lazyreview/pkg/state"
+	"github.com/shutils/lazyreview/pkg/state"
 )
 
 // JSONレビュー情報
@@ -82,20 +82,38 @@ func (m *model) getReviewIndex(param string) int {
 func (m *model) reviewContent() tea.Cmd {
 	return func() tea.Msg {
 		selectedItem, ok := m.list.SelectedItem().(listItem)
+		contextItems := getContextItems(m.list.Items())
 
 		var (
 			chat   *openai.ChatCompletion
 			review string
 			err    error
 		)
-
 		if ok {
+			// Generate content by including contextItems
 			content := ""
 			if m.conf.Previewer != "" {
 				content = customPreviewer(m.conf.Previewer, selectedItem.param)
 			} else {
 				content = defaultPreviewer(selectedItem.param)
 			}
+
+			// Append contextItems with param as the first line, followed by content
+			for _, item := range contextItems {
+				var contextContent string
+				item, ok := item.(listItem)
+				if !ok {
+					continue
+				}
+				if m.conf.Previewer != "" {
+					contextContent = customPreviewer(m.conf.Previewer, item.param)
+				} else {
+					contextContent = defaultPreviewer(item.param)
+				}
+				contextContent = item.param + "\n" + contextContent
+				content = contextContent + "\n\n" + content
+			}
+			review = content
 
 			if m.instantPrompt == "" {
 				chat, err = m.client.Getreviewfromchatgpt(content, m.conf)
@@ -124,5 +142,6 @@ func (m *model) reviewContent() tea.Cmd {
 			param:   selectedItem.param,
 			content: review,
 		}
+
 	}
 }

@@ -1,6 +1,8 @@
 package ui
 
 import (
+	"strings"
+
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/shutils/lazyreview/pkg/config"
@@ -65,10 +67,40 @@ func getItems(conf config.Config, reviewList []reviewInfo) []list.Item {
 		}
 
 		items[i] = listItem{
-			title: title,
-			param: _item.Description(),
+			title:     title,
+			param:     _item.Description(),
+			aiContext: false,
 		}
 	}
 
 	return items
+}
+
+func getContextItems(items []list.Item) []list.Item {
+	var _items []list.Item
+
+	for _, item := range items {
+		_item, ok := item.(listItem)
+		if !ok {
+			continue
+		}
+		if _item.aiContext {
+			_items = append(_items, _item)
+		}
+	}
+
+	return _items
+}
+
+func getItemListString(items []list.Item) string {
+	var params []string
+
+	for _, item := range items {
+		_item, ok := item.(listItem)
+		if ok {
+			params = append(params, _item.Description())
+		}
+	}
+
+	return strings.Join(params, "\n")
 }

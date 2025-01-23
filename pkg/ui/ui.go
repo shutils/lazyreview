@@ -15,6 +15,7 @@ import (
 
 type listItem struct {
 	title, param string
+	aiContext    bool
 }
 
 func (i listItem) Title() string       { return i.title }
@@ -30,6 +31,7 @@ type model struct {
 	configContentPanel  viewport.Model
 	statePanel          viewport.Model
 	stateDetailPanel    viewport.Model
+	contextPanel        viewport.Model
 	reviewList          []reviewInfo
 	targetDir           string
 	outputFile          string
@@ -49,6 +51,7 @@ type model struct {
 	promptKeyMap        promptKeyMap
 	configSummaryKeyMap configSummaryKeyMap
 	stateKeyMap         stateKeyMap
+	contextKeyMap       contextKeyMap
 	uiState             state.State
 	curHistoryIndex     int
 	state               state.State
@@ -75,6 +78,7 @@ func NewUi(conf config.Config, client openai.Client) model {
 		configContentPanel:  configContentPanel,
 		statePanel:          viewport.New(0, 0),
 		stateDetailPanel:    viewport.New(0, 0),
+		contextPanel:        viewport.New(0, 0),
 		reviewList:          []reviewInfo{},
 		targetDir:           conf.Target,
 		outputFile:          conf.Output,
@@ -93,6 +97,7 @@ func NewUi(conf config.Config, client openai.Client) model {
 		promptKeyMap:        GetPromptKeymap(),
 		configSummaryKeyMap: GetConfigSummaryKeymap(),
 		stateKeyMap:         GetStateKeymap(),
+		contextKeyMap:       GetContextKeymap(),
 		uiState:             state.LoadState(conf.State),
 		curHistoryIndex:     0,
 		state:               state.State{},
@@ -179,6 +184,18 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.reviewState = NoAction
 			}
 		}
+	case aiContextMsg:
+		index := findIndex(m.list.Items(), msg.itemParam)
+		item := m.list.Items()[index].(listItem)
+		if msg.method == AddContext {
+			item.aiContext = true
+		} else {
+			item.aiContext = false
+		}
+		m.list.SetItem(index, item)
+		itemTitleList := getItemListString(getContextItems(m.list.Items()))
+		m.contextPanel.SetContent(itemTitleList)
+		return m, nil
 	default:
 		m.spinner, cmd = m.spinner.Update(msg)
 		cmds = append(cmds, cmd)

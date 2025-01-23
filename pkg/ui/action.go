@@ -45,6 +45,23 @@ func (m *model) ReviewStack() (tea.Model, tea.Cmd) {
 	return *m, tea.Batch(cmds...)
 }
 
+func (m *model) ToggleAiContext() (tea.Model, tea.Cmd) {
+	item := m.list.SelectedItem().(listItem)
+	var method AiContextMethod
+	if item.aiContext {
+		method = RemoveContext
+	} else {
+		method = AddContext
+	}
+	cmd := func() tea.Msg {
+		return aiContextMsg{
+			method:    method,
+			itemParam: item.param,
+		}
+	}
+	return m, cmd
+}
+
 func (m *model) ReloadItems() (tea.Model, tea.Cmd) {
 	if m.list.FilterState() == list.Unfiltered {
 		m.list.SetItems(getItems(m.conf, m.reviewList))
@@ -131,6 +148,10 @@ func (m *model) FocusConfigSummaryPanel() (tea.Model, tea.Cmd) {
 
 func (m *model) FocusStatePanel() (tea.Model, tea.Cmd) {
 	return m.focusPanel(StatePanelFocus)
+}
+
+func (m *model) FocusContextPanel() (tea.Model, tea.Cmd) {
+	return m.focusPanel(ContextPanelFocus)
 }
 
 func (m *model) InstantPromptHistoryPrev() (tea.Model, tea.Cmd) {
