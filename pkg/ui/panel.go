@@ -221,222 +221,95 @@ func (m *model) makeView() string {
 		helpString = MakeBottomLine(globalHelp, helpModel.View(m.contextKeyMap))
 	}
 
-	listPanel := listPanelStyle.Width(primaryPanelWidth).Render(m.list.View())
-	listPanel = InsertTitleWithOffset(listPanel, "List")
+	listPanel := m.buildPanel(m.list.View(), listPanelStyle, m.list.Width(), "List")
+	contentPanel := m.buildPanel(m.contentPanel.View(), contentPanelStyle, m.contentPanel.Width, "Content")
+	reviewPanel := m.buildPanel(m.reviewPanel.View(), reviewPanelStyle, m.reviewPanel.Width, "Review")
+	reviewStackPanel := m.buildPanel(m.reviewStackPanel.View(), reviewStackPanelStyle, m.reviewStackPanel.Width, "Review stack")
+	configPanel := m.buildPanel(m.configSummaryPanel.View(), configPanelStyle, m.configSummaryPanel.Width, "Config")
+	configContentPanel := m.buildPanel(m.configContentPanel.View(), configContentPanelStyle, m.configContentPanel.Width, "Config content")
+	statePanel := m.buildPanel(m.statePanel.View(), statePanelStyle, m.statePanel.Width, "State")
+	stateDetailPanel := m.buildPanel(m.stateDetailPanel.View(), stateDetailPanelStyle, m.stateDetailPanel.Width, "State detail")
+	instantPromptPanel := m.buildPanel(m.instantPromptPanel.View(), instantPromptPanelStyle, secondlyPanelWidth, "Instant prompt")
+	contextPanel := m.buildPanel(m.contextPanel.View(), contextPanelStyle, m.contextPanel.Width, "Context")
 
-	contentPanel := contentPanelStyle.Render(m.contentPanel.View())
-	contentPanel = InsertTitleWithOffset(contentPanel, "Content")
-
-	reviewPanel := reviewPanelStyle.Render(m.reviewPanel.View())
-	reviewPanel = InsertTitleWithOffset(reviewPanel, "Review")
-
-	reviewStackPanel := reviewStackPanelStyle.Render(m.reviewStackPanel.View())
-	reviewStackPanel = InsertTitleWithOffset(reviewStackPanel, "Review stack")
-
-	configPanel := configPanelStyle.Render(m.configSummaryPanel.View())
-	configPanel = InsertTitleWithOffset(configPanel, "Config")
-
-	configContentPanel := configContentPanelStyle.Render(m.configContentPanel.View())
-	configContentPanel = InsertTitleWithOffset(configContentPanel, "Config content")
-
-	statePanel := statePanelStyle.Render(m.statePanel.View())
-	statePanel = InsertTitleWithOffset(statePanel, "State")
-
-	stateDetailPanel := stateDetailPanelStyle.Render(m.stateDetailPanel.View())
-	stateDetailPanel = InsertTitleWithOffset(stateDetailPanel, "State detail")
-
-	instantPromptPanel := instantPromptPanelStyle.Render(m.instantPromptPanel.View())
-	instantPromptPanel = InsertTitleWithOffset(instantPromptPanel, "Instant prompt")
-
-	contextPanel := contextPanelStyle.Render(m.contextPanel.View())
-	contextPanel = InsertTitleWithOffset(contextPanel, "Context")
+	primaryPanels := m.buildPrimaryPanels(statePanel, listPanel, reviewStackPanel, contextPanel, configPanel)
+	reviewCombiPanels := m.buildReviewCombiPanels(contentPanel, reviewPanel, instantPromptPanel)
+	contentPanels := m.buildContentPanels(contentPanel, instantPromptPanel)
+	reviewPanels := m.buildReviewPanels(reviewPanel, instantPromptPanel)
 
 	bottomLine := lipgloss.JoinHorizontal(lipgloss.Left, state, " ", helpString)
 	switch m.focusState {
 	case ConfigSummaryPanelFocus:
-		return lipgloss.JoinVertical(
-			lipgloss.Top,
-			lipgloss.JoinHorizontal(
-				lipgloss.Top,
-				lipgloss.JoinVertical(lipgloss.Top, statePanel, listPanel, reviewStackPanel, contextPanel, configPanel),
-				lipgloss.JoinVertical(lipgloss.Top, configContentPanel),
-			),
-			bottomLine,
-		)
+		return m.buildWindow(primaryPanels, configContentPanel, bottomLine)
 	case StatePanelFocus:
-		return lipgloss.JoinVertical(
-			lipgloss.Top,
-			lipgloss.JoinHorizontal(
-				lipgloss.Top,
-				lipgloss.JoinVertical(lipgloss.Top, statePanel, listPanel, reviewStackPanel, contextPanel, configPanel),
-				lipgloss.JoinVertical(lipgloss.Top, stateDetailPanel),
-			),
-			bottomLine,
-		)
+		return m.buildWindow(primaryPanels, stateDetailPanel, bottomLine)
 	case ListPanelFocus:
-		return lipgloss.JoinVertical(
-			lipgloss.Top,
-			lipgloss.JoinHorizontal(
-				lipgloss.Top,
-				lipgloss.JoinVertical(lipgloss.Top, statePanel, listPanel, reviewStackPanel, contextPanel, configPanel),
-				lipgloss.JoinVertical(lipgloss.Top, lipgloss.JoinHorizontal(lipgloss.Left,
-					contentPanel,
-					reviewPanel,
-				),
-					instantPromptPanel,
-				),
-			),
-			bottomLine,
-		)
+		return m.buildWindow(primaryPanels, reviewCombiPanels, bottomLine)
 	case ReviewStackPanelFocus:
-		return lipgloss.JoinVertical(
-			lipgloss.Top,
-			lipgloss.JoinHorizontal(
-				lipgloss.Top,
-				lipgloss.JoinVertical(lipgloss.Top, statePanel, listPanel, reviewStackPanel, contextPanel, configPanel),
-				lipgloss.JoinVertical(lipgloss.Top, lipgloss.JoinHorizontal(lipgloss.Left,
-					contentPanel,
-					reviewPanel,
-				),
-					instantPromptPanel,
-				),
-			),
-			bottomLine,
-		)
+		return m.buildWindow(primaryPanels, reviewCombiPanels, bottomLine)
 	case ContextPanelFocus:
-		return lipgloss.JoinVertical(
-			lipgloss.Top,
-			lipgloss.JoinHorizontal(
-				lipgloss.Top,
-				lipgloss.JoinVertical(lipgloss.Top, statePanel, listPanel, reviewStackPanel, contextPanel, configPanel),
-				lipgloss.JoinVertical(lipgloss.Top, lipgloss.JoinHorizontal(lipgloss.Left,
-					contentPanel,
-					reviewPanel,
-				),
-					instantPromptPanel,
-				),
-			),
-			bottomLine,
-		)
+		return m.buildWindow(primaryPanels, reviewCombiPanels, bottomLine)
 	case ContentPanelFocus:
 		switch m.zoomState {
 		case Normal:
-			return lipgloss.JoinVertical(
-				lipgloss.Top,
-				lipgloss.JoinHorizontal(
-					lipgloss.Top,
-					lipgloss.JoinVertical(lipgloss.Top, statePanel, listPanel, reviewStackPanel, contextPanel, configPanel),
-					lipgloss.JoinVertical(lipgloss.Top, lipgloss.JoinHorizontal(lipgloss.Left,
-						contentPanel,
-						reviewPanel,
-					),
-						instantPromptPanel,
-					),
-				),
-				bottomLine,
-			)
+			return m.buildWindow(primaryPanels, reviewCombiPanels, bottomLine)
 		case Middle:
-			return lipgloss.JoinVertical(
-				lipgloss.Top,
-				lipgloss.JoinVertical(lipgloss.Top, lipgloss.JoinHorizontal(lipgloss.Left,
-					contentPanel,
-					reviewPanel,
-				),
-					instantPromptPanel,
-				),
-				bottomLine,
-			)
+			return m.buildWindowZoom(reviewCombiPanels, bottomLine)
 		case Max:
-			return lipgloss.JoinVertical(
-				lipgloss.Top,
-				lipgloss.JoinVertical(lipgloss.Top, lipgloss.JoinHorizontal(lipgloss.Left,
-					contentPanel,
-				),
-					instantPromptPanel,
-				),
-				bottomLine,
-			)
+			return m.buildWindowZoom(contentPanels, bottomLine)
 		}
 	case ReviewPanelFocus:
 		switch m.zoomState {
 		case Normal:
-			return lipgloss.JoinVertical(
-				lipgloss.Top,
-				lipgloss.JoinHorizontal(
-					lipgloss.Top,
-					lipgloss.JoinVertical(lipgloss.Top, statePanel, listPanel, reviewStackPanel, contextPanel, configPanel),
-					lipgloss.JoinVertical(lipgloss.Top, lipgloss.JoinHorizontal(lipgloss.Left,
-						contentPanel,
-						reviewPanel,
-					),
-						instantPromptPanel,
-					),
-				),
-				bottomLine,
-			)
+			return m.buildWindow(primaryPanels, reviewCombiPanels, bottomLine)
 		case Middle:
-			return lipgloss.JoinVertical(
-				lipgloss.Top,
-				lipgloss.JoinVertical(lipgloss.Top, lipgloss.JoinHorizontal(lipgloss.Left,
-					contentPanel,
-					reviewPanel,
-				),
-					instantPromptPanel,
-				),
-				bottomLine,
-			)
+			return m.buildWindowZoom(reviewCombiPanels, bottomLine)
 		case Max:
-			return lipgloss.JoinVertical(
-				lipgloss.Top,
-				lipgloss.JoinVertical(lipgloss.Top, lipgloss.JoinHorizontal(lipgloss.Left,
-					reviewPanel,
-				),
-					instantPromptPanel,
-				),
-				bottomLine,
-			)
+			return m.buildWindowZoom(reviewPanels, bottomLine)
 		}
 	case InstantPromptPanelFocus:
 		switch m.zoomState {
 		case Normal:
-			return lipgloss.JoinVertical(
-				lipgloss.Top,
-				lipgloss.JoinHorizontal(
-					lipgloss.Top,
-					lipgloss.JoinVertical(lipgloss.Top, statePanel, listPanel, reviewStackPanel, contextPanel, configPanel),
-					lipgloss.JoinVertical(lipgloss.Top, lipgloss.JoinHorizontal(lipgloss.Left,
-						contentPanel,
-						reviewPanel,
-					),
-						instantPromptPanel,
-					),
-				),
-				bottomLine,
-			)
+			return m.buildWindow(primaryPanels, reviewCombiPanels, bottomLine)
 		case Middle:
-			return lipgloss.JoinVertical(
-				lipgloss.Top,
-				lipgloss.JoinVertical(lipgloss.Top, lipgloss.JoinHorizontal(lipgloss.Left,
-					contentPanel,
-					reviewPanel,
-				),
-					instantPromptPanel,
-				),
-				bottomLine,
-			)
+			return m.buildWindowZoom(reviewCombiPanels, bottomLine)
 		case Max:
-			return lipgloss.JoinVertical(
-				lipgloss.Top,
-				lipgloss.JoinVertical(lipgloss.Top, lipgloss.JoinHorizontal(lipgloss.Left,
-					reviewPanel,
-				),
-					instantPromptPanel,
-				),
-				bottomLine,
-			)
+			return m.buildWindowZoom(reviewPanels, bottomLine)
 		}
 	}
 	return ""
+}
+
+func (m *model) setPanelSize() {
+
+}
+
+func (m *model) buildPrimaryPanels(statePanel, listPanel, reviewStackPanel, contextPanel, configPanel string) string {
+	return lipgloss.JoinVertical(lipgloss.Top, statePanel, listPanel, reviewStackPanel, contextPanel, configPanel)
+}
+
+func (m *model) buildReviewCombiPanels(contentPanel, reviewPanel, instantPromptPanel string) string {
+	return lipgloss.JoinVertical(lipgloss.Top, lipgloss.JoinHorizontal(lipgloss.Left, contentPanel, reviewPanel), instantPromptPanel)
+}
+
+func (m *model) buildContentPanels(contentPanel, instantPromptPanel string) string {
+	return lipgloss.JoinVertical(lipgloss.Top, lipgloss.JoinHorizontal(lipgloss.Left, contentPanel), instantPromptPanel)
+}
+
+func (m *model) buildReviewPanels(reviewPanel, instantPromptPanel string) string {
+	return lipgloss.JoinVertical(lipgloss.Top, lipgloss.JoinHorizontal(lipgloss.Left, reviewPanel), instantPromptPanel)
+}
+
+func (m *model) buildPanel(p string, s lipgloss.Style, w int, title string) string {
+	return InsertTitleWithOffset(s.Width(w).Render(p), title)
+}
+
+func (m *model) buildWindow(primary, secondly, bottom string) string {
+	return lipgloss.JoinVertical(lipgloss.Top, lipgloss.JoinHorizontal(lipgloss.Top, primary, secondly), bottom)
+}
+
+func (m *model) buildWindowZoom(panels, bottom string) string {
+	return lipgloss.JoinVertical(lipgloss.Top, lipgloss.JoinHorizontal(lipgloss.Top, panels), bottom)
 }
 
 func getRendered(text string, style string, width int) string {
