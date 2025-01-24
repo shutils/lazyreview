@@ -20,9 +20,19 @@ func (m *model) onChangeListSelectedItem() (tea.Model, tea.Cmd) {
 	} else {
 		itemContent = defaultPreviewer(selectedItem.param)
 	}
-	m.reviewPanel.SetContent(reviewContent)
-	m.contentPanel.SetContent(itemContent)
+	m.loadReviewPanel(reviewContent)
+	m.loadContentPanel(itemContent)
 	return m, nil
+}
+
+func (m *model) loadReviewPanel(itemContent string) {
+	m.reviewPanel.SetContent(itemContent)
+	m.reviewPanel.GotoTop()
+}
+
+func (m *model) loadContentPanel(itemContent string) {
+	m.contentPanel.SetContent(itemContent)
+	m.contentPanel.GotoTop()
 }
 
 // Returns a index of the item with the given param
