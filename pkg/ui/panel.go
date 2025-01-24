@@ -20,15 +20,6 @@ const (
 	Max
 )
 
-var (
-	winWidth, winHeight,
-	primaryPanelWidth, secondlyPanelWidth,
-	primaryPanelHeight, secondlyPanelHeight,
-	itemPreviewPanelWidth, itemReviewPanelWidth,
-	listPanelHeight, configPanelHeight, itemPreviewPanelHeight, itemReviewPanelHeight, instantPromptPanelHeight,
-	statePanelHeight, contextPanelHeight, reviewStackPanelHeight int
-)
-
 const (
 	ListPanelFocus FocusState = iota
 	ContentPanelFocus
@@ -97,8 +88,8 @@ func InsertTitleWithOffset(rendered, title string) string {
 }
 
 func (m *model) handleWindowSize(msg tea.WindowSizeMsg) {
-	winWidth = msg.Width
-	winHeight = msg.Height
+	m.winSize.height = msg.Height
+	m.winSize.width = msg.Width
 }
 
 func (m *model) makeView() string {
@@ -112,77 +103,9 @@ func (m *model) makeView() string {
 	statePanelStyle := baseStyle
 	stateDetailPanelStyle := baseStyle
 	contextPanelStyle := baseStyle
-
-	primaryPanelHeight = winHeight - 6
-	secondlyPanelHeight = winHeight - 3
-	listPanelHeight = winHeight - 23
-	configPanelHeight = 1
-	statePanelHeight = 1
-	contextPanelHeight = 5
-	reviewStackPanelHeight = 5
-	instantPromptPanelHeight = 5
-	itemPreviewPanelHeight = winHeight - 10
-	itemReviewPanelHeight = winHeight - 10
-
-	switch m.zoomState {
-	case Normal:
-		if isFocusPrimary(m.focusState) {
-			primaryPanelWidth = winWidth/3 - 2
-			secondlyPanelWidth = winWidth/3*2 - 2
-			itemPreviewPanelWidth = winWidth/3 - 2
-			itemReviewPanelWidth = winWidth/3 - 2
-		} else {
-			primaryPanelWidth = winWidth / 10 * 2
-			secondlyPanelWidth = winWidth/10*8 + 2
-			itemPreviewPanelWidth = winWidth / 10 * 4
-			itemReviewPanelWidth = winWidth / 10 * 4
-		}
-	case Middle:
-		if isFocusPrimary(m.focusState) {
-			primaryPanelWidth = winWidth / 2
-			secondlyPanelWidth = winWidth/2 - 4
-			itemPreviewPanelWidth = winWidth/4 - 3
-			itemReviewPanelWidth = winWidth/4 - 3
-		} else {
-			secondlyPanelWidth = winWidth - 2
-			itemPreviewPanelWidth = winWidth/2 - 2
-			itemReviewPanelWidth = winWidth/2 - 2
-		}
-	case Max:
-		if isFocusPrimary(m.focusState) {
-			primaryPanelWidth = winWidth - 2
-		} else {
-			secondlyPanelWidth = winWidth - 2
-			if isFocusItemPreviewPanel(m.focusState) {
-				itemPreviewPanelWidth = winWidth - 2
-			} else {
-				itemReviewPanelWidth = winWidth - 2
-			}
-		}
-	}
-
-	m.list.SetSize(primaryPanelWidth, listPanelHeight)
-
-	m.configSummaryPanel.Width = primaryPanelWidth
-	m.configSummaryPanel.Height = configPanelHeight
-	m.contentPanel.Width = itemPreviewPanelWidth
-	m.contentPanel.Height = itemPreviewPanelHeight
-	m.configContentPanel.Width = secondlyPanelWidth
-	m.configContentPanel.Height = secondlyPanelHeight
-	m.reviewPanel.Width = itemReviewPanelWidth
-	m.reviewPanel.Height = itemReviewPanelHeight
-	m.reviewStackPanel.Width = primaryPanelWidth
-	m.reviewStackPanel.Height = reviewStackPanelHeight
-	m.instantPromptPanel.SetWidth(secondlyPanelWidth)
-	m.instantPromptPanel.SetHeight(instantPromptPanelHeight)
-	m.statePanel.Width = primaryPanelWidth
-	m.statePanel.Height = statePanelHeight
-	m.stateDetailPanel.Width = secondlyPanelWidth
-	m.stateDetailPanel.Height = secondlyPanelHeight
-	m.contextPanel.Width = primaryPanelWidth
-	m.contextPanel.Height = contextPanelHeight
-
 	state := "/"
+
+	m.setPanelSize()
 
 	if m.reviewState == Reviewing {
 		state = m.spinner.View()
@@ -229,7 +152,7 @@ func (m *model) makeView() string {
 	configContentPanel := m.buildPanel(m.configContentPanel.View(), configContentPanelStyle, m.configContentPanel.Width, "Config content")
 	statePanel := m.buildPanel(m.statePanel.View(), statePanelStyle, m.statePanel.Width, "State")
 	stateDetailPanel := m.buildPanel(m.stateDetailPanel.View(), stateDetailPanelStyle, m.stateDetailPanel.Width, "State detail")
-	instantPromptPanel := m.buildPanel(m.instantPromptPanel.View(), instantPromptPanelStyle, secondlyPanelWidth, "Instant prompt")
+	instantPromptPanel := m.buildPanel(m.instantPromptPanel.View(), instantPromptPanelStyle, m.panelSize.secondlyPanelWidth, "Instant prompt")
 	contextPanel := m.buildPanel(m.contextPanel.View(), contextPanelStyle, m.contextPanel.Width, "Context")
 
 	primaryPanels := m.buildPrimaryPanels(statePanel, listPanel, reviewStackPanel, contextPanel, configPanel)
@@ -281,7 +204,74 @@ func (m *model) makeView() string {
 }
 
 func (m *model) setPanelSize() {
+	m.panelSize.primaryPanelHeight = m.winSize.height - 6
+	m.panelSize.secondlyPanelHeight = m.winSize.height - 3
+	m.panelSize.listPanelHeight = m.winSize.height - 23
+	m.panelSize.configPanelHeight = 1
+	m.panelSize.statePanelHeight = 1
+	m.panelSize.contextPanelHeight = 5
+	m.panelSize.reviewStackPanelHeight = 5
+	m.panelSize.instantPromptPanelHeight = 5
+	m.panelSize.itemPreviewPanelHeight = m.winSize.height - 10
+	m.panelSize.itemReviewPanelHeight = m.winSize.height - 10
 
+	switch m.zoomState {
+	case Normal:
+		if isFocusPrimary(m.focusState) {
+			m.panelSize.primaryPanelWidth = m.winSize.width/3 - 2
+			m.panelSize.secondlyPanelWidth = m.winSize.width/3*2 - 2
+			m.panelSize.itemPreviewPanelWidth = m.winSize.width/3 - 2
+			m.panelSize.itemReviewPanelWidth = m.winSize.width/3 - 2
+		} else {
+			m.panelSize.primaryPanelWidth = m.winSize.width / 10 * 2
+			m.panelSize.secondlyPanelWidth = m.winSize.width/10*8 + 2
+			m.panelSize.itemPreviewPanelWidth = m.winSize.width / 10 * 4
+			m.panelSize.itemReviewPanelWidth = m.winSize.width / 10 * 4
+		}
+	case Middle:
+		if isFocusPrimary(m.focusState) {
+			m.panelSize.primaryPanelWidth = m.winSize.width / 2
+			m.panelSize.secondlyPanelWidth = m.winSize.width/2 - 4
+			m.panelSize.itemPreviewPanelWidth = m.winSize.width/4 - 3
+			m.panelSize.itemReviewPanelWidth = m.winSize.width/4 - 3
+		} else {
+			m.panelSize.secondlyPanelWidth = m.winSize.width - 2
+			m.panelSize.itemPreviewPanelWidth = m.winSize.width/2 - 2
+			m.panelSize.itemReviewPanelWidth = m.winSize.width/2 - 2
+		}
+	case Max:
+		if isFocusPrimary(m.focusState) {
+			m.panelSize.primaryPanelWidth = m.winSize.width - 2
+		} else {
+			m.panelSize.secondlyPanelWidth = m.winSize.width - 2
+			if isFocusItemPreviewPanel(m.focusState) {
+				m.panelSize.itemPreviewPanelWidth = m.winSize.width - 2
+			} else {
+				m.panelSize.itemReviewPanelWidth = m.winSize.width - 2
+			}
+		}
+	}
+
+	m.list.SetSize(m.panelSize.primaryPanelWidth, m.panelSize.listPanelHeight)
+
+	m.configSummaryPanel.Width = m.panelSize.primaryPanelWidth
+	m.configSummaryPanel.Height = m.panelSize.configPanelHeight
+	m.contentPanel.Width = m.panelSize.itemPreviewPanelWidth
+	m.contentPanel.Height = m.panelSize.itemPreviewPanelHeight
+	m.configContentPanel.Width = m.panelSize.secondlyPanelWidth
+	m.configContentPanel.Height = m.panelSize.secondlyPanelHeight
+	m.reviewPanel.Width = m.panelSize.itemReviewPanelWidth
+	m.reviewPanel.Height = m.panelSize.itemReviewPanelHeight
+	m.reviewStackPanel.Width = m.panelSize.primaryPanelWidth
+	m.reviewStackPanel.Height = m.panelSize.reviewStackPanelHeight
+	m.instantPromptPanel.SetWidth(m.panelSize.secondlyPanelWidth)
+	m.instantPromptPanel.SetHeight(m.panelSize.instantPromptPanelHeight)
+	m.statePanel.Width = m.panelSize.primaryPanelWidth
+	m.statePanel.Height = m.panelSize.statePanelHeight
+	m.stateDetailPanel.Width = m.panelSize.secondlyPanelWidth
+	m.stateDetailPanel.Height = m.panelSize.secondlyPanelHeight
+	m.contextPanel.Width = m.panelSize.primaryPanelWidth
+	m.contextPanel.Height = m.panelSize.contextPanelHeight
 }
 
 func (m *model) buildPrimaryPanels(statePanel, listPanel, reviewStackPanel, contextPanel, configPanel string) string {

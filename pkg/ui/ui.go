@@ -13,6 +13,18 @@ import (
 	state "github.com/shutils/lazyreview/pkg/state"
 )
 
+type panelSize struct {
+	primaryPanelWidth, secondlyPanelWidth,
+	primaryPanelHeight, secondlyPanelHeight,
+	itemPreviewPanelWidth, itemReviewPanelWidth,
+	listPanelHeight, configPanelHeight, itemPreviewPanelHeight, itemReviewPanelHeight, instantPromptPanelHeight,
+	statePanelHeight, contextPanelHeight, reviewStackPanelHeight int
+}
+
+type winSize struct {
+	height, width int
+}
+
 type listItem struct {
 	title, param string
 	aiContext    bool
@@ -33,6 +45,8 @@ type model struct {
 	statePanel          viewport.Model
 	stateDetailPanel    viewport.Model
 	contextPanel        viewport.Model
+	panelSize           panelSize
+	winSize             winSize
 	reviewList          []reviewInfo
 	targetDir           string
 	outputFile          string
