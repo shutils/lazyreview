@@ -92,6 +92,24 @@ func getContextItems(items []list.Item) []list.Item {
 	return _items
 }
 
+func getReviewStackItems(items []list.Item, indexes []int) []list.Item {
+	var filteredItems []list.Item
+
+	// Create a set of valid indexes for quick lookup
+	indexSet := make(map[int]struct{})
+	for _, index := range indexes {
+		indexSet[index] = struct{}{}
+	}
+
+	// Iterate through the original items and check if the index is in the set
+	for i, item := range items {
+		if _, exists := indexSet[i]; exists {
+			filteredItems = append(filteredItems, item)
+		}
+	}
+	return filteredItems
+}
+
 func getItemListString(items []list.Item) string {
 	var params []string
 

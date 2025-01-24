@@ -26,13 +26,14 @@ var (
 	primaryPanelHeight, secondlyPanelHeight,
 	itemPreviewPanelWidth, itemReviewPanelWidth,
 	listPanelHeight, configPanelHeight, itemPreviewPanelHeight, itemReviewPanelHeight, instantPromptPanelHeight,
-	statePanelHeight, contextPanelHeight int
+	statePanelHeight, contextPanelHeight, reviewStackPanelHeight int
 )
 
 const (
 	ListPanelFocus FocusState = iota
 	ContentPanelFocus
 	ReviewPanelFocus
+	ReviewStackPanelFocus
 	InstantPromptPanelFocus
 	ConfigSummaryPanelFocus
 	StatePanelFocus
@@ -42,17 +43,6 @@ const (
 var (
 	baseStyle = lipgloss.NewStyle().BorderStyle(lipgloss.NormalBorder())
 )
-
-func replacePrefix(text string, prefix string) string {
-	runes := []rune(text) // 文字列をruneスライスに変換
-	var updatedTitle string
-	if len(runes) >= 2 {
-		updatedTitle = prefix + string(runes[2:]) // 先頭2文字を置換して文字列に戻す
-	} else {
-		updatedTitle = prefix // 文字数が2未満の場合も安全に処理
-	}
-	return updatedTitle
-}
 
 func runeWidth(r rune) int {
 	prop := width.LookupRune(r)
@@ -115,6 +105,7 @@ func (m *model) makeView() string {
 	listPanelStyle := baseStyle
 	contentPanelStyle := baseStyle
 	reviewPanelStyle := baseStyle
+	reviewStackPanelStyle := baseStyle
 	instantPromptPanelStyle := baseStyle
 	configPanelStyle := baseStyle
 	configContentPanelStyle := baseStyle
@@ -124,10 +115,11 @@ func (m *model) makeView() string {
 
 	primaryPanelHeight = winHeight - 6
 	secondlyPanelHeight = winHeight - 3
-	listPanelHeight = winHeight - 16
+	listPanelHeight = winHeight - 23
 	configPanelHeight = 1
 	statePanelHeight = 1
 	contextPanelHeight = 5
+	reviewStackPanelHeight = 5
 	instantPromptPanelHeight = 5
 	itemPreviewPanelHeight = winHeight - 10
 	itemReviewPanelHeight = winHeight - 10
@@ -179,6 +171,8 @@ func (m *model) makeView() string {
 	m.configContentPanel.Height = secondlyPanelHeight
 	m.reviewPanel.Width = itemReviewPanelWidth
 	m.reviewPanel.Height = itemReviewPanelHeight
+	m.reviewStackPanel.Width = primaryPanelWidth
+	m.reviewStackPanel.Height = reviewStackPanelHeight
 	m.instantPromptPanel.SetWidth(secondlyPanelWidth)
 	m.instantPromptPanel.SetHeight(instantPromptPanelHeight)
 	m.statePanel.Width = primaryPanelWidth
@@ -210,6 +204,9 @@ func (m *model) makeView() string {
 	case ReviewPanelFocus:
 		reviewPanelStyle = reviewPanelStyle.BorderForeground(lipgloss.Color("62"))
 		helpString = MakeBottomLine(globalHelp, helpModel.View(m.reviewKeyMap))
+	case ReviewStackPanelFocus:
+		reviewStackPanelStyle = reviewStackPanelStyle.BorderForeground(lipgloss.Color("62"))
+		helpString = MakeBottomLine(globalHelp, helpModel.View(m.reviewStackKeyMap))
 	case InstantPromptPanelFocus:
 		instantPromptPanelStyle = instantPromptPanelStyle.BorderForeground(lipgloss.Color("62"))
 		helpString = MakeBottomLine(globalHelp, helpModel.View(m.promptKeyMap))
@@ -232,6 +229,9 @@ func (m *model) makeView() string {
 
 	reviewPanel := reviewPanelStyle.Render(m.reviewPanel.View())
 	reviewPanel = InsertTitleWithOffset(reviewPanel, "Review")
+
+	reviewStackPanel := reviewStackPanelStyle.Render(m.reviewStackPanel.View())
+	reviewStackPanel = InsertTitleWithOffset(reviewStackPanel, "Review stack")
 
 	configPanel := configPanelStyle.Render(m.configSummaryPanel.View())
 	configPanel = InsertTitleWithOffset(configPanel, "Config")
@@ -258,7 +258,7 @@ func (m *model) makeView() string {
 			lipgloss.Top,
 			lipgloss.JoinHorizontal(
 				lipgloss.Top,
-				lipgloss.JoinVertical(lipgloss.Top, statePanel, listPanel, contextPanel, configPanel),
+				lipgloss.JoinVertical(lipgloss.Top, statePanel, listPanel, reviewStackPanel, contextPanel, configPanel),
 				lipgloss.JoinVertical(lipgloss.Top, configContentPanel),
 			),
 			bottomLine,
@@ -268,7 +268,7 @@ func (m *model) makeView() string {
 			lipgloss.Top,
 			lipgloss.JoinHorizontal(
 				lipgloss.Top,
-				lipgloss.JoinVertical(lipgloss.Top, statePanel, listPanel, contextPanel, configPanel),
+				lipgloss.JoinVertical(lipgloss.Top, statePanel, listPanel, reviewStackPanel, contextPanel, configPanel),
 				lipgloss.JoinVertical(lipgloss.Top, stateDetailPanel),
 			),
 			bottomLine,
@@ -278,7 +278,22 @@ func (m *model) makeView() string {
 			lipgloss.Top,
 			lipgloss.JoinHorizontal(
 				lipgloss.Top,
-				lipgloss.JoinVertical(lipgloss.Top, statePanel, listPanel, contextPanel, configPanel),
+				lipgloss.JoinVertical(lipgloss.Top, statePanel, listPanel, reviewStackPanel, contextPanel, configPanel),
+				lipgloss.JoinVertical(lipgloss.Top, lipgloss.JoinHorizontal(lipgloss.Left,
+					contentPanel,
+					reviewPanel,
+				),
+					instantPromptPanel,
+				),
+			),
+			bottomLine,
+		)
+	case ReviewStackPanelFocus:
+		return lipgloss.JoinVertical(
+			lipgloss.Top,
+			lipgloss.JoinHorizontal(
+				lipgloss.Top,
+				lipgloss.JoinVertical(lipgloss.Top, statePanel, listPanel, reviewStackPanel, contextPanel, configPanel),
 				lipgloss.JoinVertical(lipgloss.Top, lipgloss.JoinHorizontal(lipgloss.Left,
 					contentPanel,
 					reviewPanel,
@@ -293,7 +308,7 @@ func (m *model) makeView() string {
 			lipgloss.Top,
 			lipgloss.JoinHorizontal(
 				lipgloss.Top,
-				lipgloss.JoinVertical(lipgloss.Top, statePanel, listPanel, contextPanel, configPanel),
+				lipgloss.JoinVertical(lipgloss.Top, statePanel, listPanel, reviewStackPanel, contextPanel, configPanel),
 				lipgloss.JoinVertical(lipgloss.Top, lipgloss.JoinHorizontal(lipgloss.Left,
 					contentPanel,
 					reviewPanel,
@@ -310,7 +325,7 @@ func (m *model) makeView() string {
 				lipgloss.Top,
 				lipgloss.JoinHorizontal(
 					lipgloss.Top,
-					lipgloss.JoinVertical(lipgloss.Top, statePanel, listPanel, contextPanel, configPanel),
+					lipgloss.JoinVertical(lipgloss.Top, statePanel, listPanel, reviewStackPanel, contextPanel, configPanel),
 					lipgloss.JoinVertical(lipgloss.Top, lipgloss.JoinHorizontal(lipgloss.Left,
 						contentPanel,
 						reviewPanel,
@@ -349,7 +364,7 @@ func (m *model) makeView() string {
 				lipgloss.Top,
 				lipgloss.JoinHorizontal(
 					lipgloss.Top,
-					lipgloss.JoinVertical(lipgloss.Top, statePanel, listPanel, contextPanel, configPanel),
+					lipgloss.JoinVertical(lipgloss.Top, statePanel, listPanel, reviewStackPanel, contextPanel, configPanel),
 					lipgloss.JoinVertical(lipgloss.Top, lipgloss.JoinHorizontal(lipgloss.Left,
 						contentPanel,
 						reviewPanel,
@@ -388,7 +403,7 @@ func (m *model) makeView() string {
 				lipgloss.Top,
 				lipgloss.JoinHorizontal(
 					lipgloss.Top,
-					lipgloss.JoinVertical(lipgloss.Top, statePanel, listPanel, contextPanel, configPanel),
+					lipgloss.JoinVertical(lipgloss.Top, statePanel, listPanel, reviewStackPanel, contextPanel, configPanel),
 					lipgloss.JoinVertical(lipgloss.Top, lipgloss.JoinHorizontal(lipgloss.Left,
 						contentPanel,
 						reviewPanel,
@@ -441,7 +456,7 @@ func getRendered(text string, style string, width int) string {
 }
 
 func isFocusPrimary(state FocusState) bool {
-	if state == ListPanelFocus || state == ConfigSummaryPanelFocus || state == StatePanelFocus || state == ContextPanelFocus {
+	if state == ListPanelFocus || state == ConfigSummaryPanelFocus || state == StatePanelFocus || state == ContextPanelFocus || state == ReviewStackPanelFocus {
 		return true
 	}
 	return false

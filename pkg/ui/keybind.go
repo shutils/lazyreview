@@ -38,6 +38,10 @@ func GetReviewKeymap() reviewKeyMap {
 	return ReviewKeyMap
 }
 
+func GetReviewStackKeymap() reviewStackKeyMap {
+	return ReviewStackKeyMap
+}
+
 func GetPromptKeymap() promptKeyMap {
 	return PromptKeyMap
 }
@@ -72,7 +76,7 @@ type listKeyMap struct {
 	ReviewStack               key.Binding
 	ReloadItems               key.Binding
 	FocusContentPanel         key.Binding
-	FocusContextPanel         key.Binding
+	FocusReviewStackPanel     key.Binding
 	FocusInstantPrompt        key.Binding
 	FocusStatePanel           key.Binding
 	ReviewContentCursorDown   key.Binding
@@ -91,7 +95,7 @@ func (k listKeyMap) ShortHelp() []key.Binding {
 		k.ReviewStack,
 		k.ReloadItems,
 		k.FocusContentPanel,
-		k.FocusContextPanel,
+		k.FocusReviewStackPanel,
 		k.FocusStatePanel,
 		k.FocusInstantPrompt,
 		k.OpenReview,
@@ -112,7 +116,7 @@ func (k listKeyMap) FullHelp() [][]key.Binding {
 			k.ReviewStack,
 			k.ReloadItems,
 			k.FocusContentPanel,
-			k.FocusContextPanel,
+			k.FocusReviewStackPanel,
 			k.FocusStatePanel,
 			k.OpenReview,
 			// k.ReviewContentCursorDown,
@@ -136,9 +140,9 @@ var ListKeyMap = listKeyMap{
 		key.WithKeys("h"),
 		key.WithHelp("h", "focus state"),
 	),
-	FocusContextPanel: key.NewBinding(
+	FocusReviewStackPanel: key.NewBinding(
 		key.WithKeys("l"),
-		key.WithHelp("l", "focus context"),
+		key.WithHelp("l", "focus stack"),
 	),
 	StartFilter: key.NewBinding(
 		key.WithKeys("/"),
@@ -334,6 +338,38 @@ var ReviewKeyMap = reviewKeyMap{
 	),
 }
 
+type reviewStackKeyMap struct {
+	FocusListPanel    key.Binding
+	FocusContextPanel key.Binding
+}
+
+func (k reviewStackKeyMap) ShortHelp() []key.Binding {
+	return []key.Binding{
+		k.FocusListPanel,
+		k.FocusContextPanel,
+	}
+}
+
+func (k reviewStackKeyMap) FullHelp() [][]key.Binding {
+	return [][]key.Binding{
+		{
+			k.FocusListPanel,
+			k.FocusContextPanel,
+		},
+	}
+}
+
+var ReviewStackKeyMap = reviewStackKeyMap{
+	FocusListPanel: key.NewBinding(
+		key.WithKeys("h"),
+		key.WithHelp("h", "focus list"),
+	),
+	FocusContextPanel: key.NewBinding(
+		key.WithKeys("l"),
+		key.WithHelp("l", "focus context"),
+	),
+}
+
 type promptKeyMap struct {
 	Blur                     key.Binding
 	InstantPromptHistoryPrev key.Binding
@@ -398,7 +434,7 @@ var ConfigSummaryKeyMap = configSummaryKeyMap{
 	),
 	FocusStatePanel: key.NewBinding(
 		key.WithKeys("l"),
-		key.WithHelp("l", "focus list"),
+		key.WithHelp("l", "focus state"),
 	),
 }
 
@@ -426,7 +462,7 @@ func (k stateKeyMap) FullHelp() [][]key.Binding {
 var StateKeyMap = stateKeyMap{
 	FocusContextPanel: key.NewBinding(
 		key.WithKeys("l"),
-		key.WithHelp("l", "focus list"),
+		key.WithHelp("l", "focus context"),
 	),
 	FocusConfigPanel: key.NewBinding(
 		key.WithKeys("h"),
@@ -435,14 +471,14 @@ var StateKeyMap = stateKeyMap{
 }
 
 type contextKeyMap struct {
-	FocusListPanel   key.Binding
-	FocusConfigPanel key.Binding
+	FocusListPanel        key.Binding
+	FocusReviewStackPanel key.Binding
 }
 
 func (k contextKeyMap) ShortHelp() []key.Binding {
 	return []key.Binding{
 		k.FocusListPanel,
-		k.FocusConfigPanel,
+		k.FocusReviewStackPanel,
 	}
 }
 
@@ -450,7 +486,7 @@ func (k contextKeyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{
 		{
 			k.FocusListPanel,
-			k.FocusConfigPanel,
+			k.FocusReviewStackPanel,
 		},
 	}
 }
@@ -458,11 +494,11 @@ func (k contextKeyMap) FullHelp() [][]key.Binding {
 var ContextKeyMap = contextKeyMap{
 	FocusListPanel: key.NewBinding(
 		key.WithKeys("h"),
-		key.WithHelp("h", "focus config"),
+		key.WithHelp("h", "focus list"),
 	),
-	FocusConfigPanel: key.NewBinding(
+	FocusReviewStackPanel: key.NewBinding(
 		key.WithKeys("l"),
-		key.WithHelp("l", "focus list"),
+		key.WithHelp("l", "focus stack"),
 	),
 }
 
@@ -500,8 +536,8 @@ func (m *model) handleListKey(msg tea.Msg) func() (tea.Model, tea.Cmd) {
 			return m.ReloadItems
 		case key.Matches(msg, m.listKeyMap.FocusContentPanel):
 			return m.FocusContentPanel
-		case key.Matches(msg, m.listKeyMap.FocusContextPanel):
-			return m.FocusContextPanel
+		case key.Matches(msg, m.listKeyMap.FocusReviewStackPanel):
+			return m.FocusReviewStackPanel
 		case key.Matches(msg, m.listKeyMap.FocusStatePanel):
 			return m.FocusStatePanel
 		case key.Matches(msg, m.listKeyMap.FocusInstantPrompt):
@@ -573,6 +609,19 @@ func (m *model) handleReviewKey(msg tea.Msg) func() (tea.Model, tea.Cmd) {
 	return nil
 }
 
+func (m *model) handleReviewStackKey(msg tea.Msg) func() (tea.Model, tea.Cmd) {
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		switch {
+		case key.Matches(msg, m.reviewStackKeyMap.FocusListPanel):
+			return m.FocusListPanel
+		case key.Matches(msg, m.reviewStackKeyMap.FocusContextPanel):
+			return m.FocusContextPanel
+		}
+	}
+	return nil
+}
+
 func (m *model) handlePromptKey(msg tea.Msg) func() (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
@@ -621,8 +670,8 @@ func (m *model) handleContextKey(msg tea.Msg) func() (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch {
 		case key.Matches(msg, m.contextKeyMap.FocusListPanel):
-			return m.FocusListPanel
-		case key.Matches(msg, m.contextKeyMap.FocusConfigPanel):
+			return m.FocusReviewStackPanel
+		case key.Matches(msg, m.contextKeyMap.FocusReviewStackPanel):
 			return m.FocusConfigSummaryPanel
 		}
 	}
@@ -651,6 +700,12 @@ func (m *model) handleKey(msg tea.Msg) func() (tea.Model, tea.Cmd) {
 		}
 	case ReviewPanelFocus:
 		if action := m.handleReviewKey(msg); action != nil {
+			return func() (tea.Model, tea.Cmd) {
+				return action()
+			}
+		}
+	case ReviewStackPanelFocus:
+		if action := m.handleReviewStackKey(msg); action != nil {
 			return func() (tea.Model, tea.Cmd) {
 				return action()
 			}

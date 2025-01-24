@@ -138,6 +138,10 @@ func (m *model) FocusReviewPanel() (tea.Model, tea.Cmd) {
 	return m.focusPanel(ReviewPanelFocus)
 }
 
+func (m *model) FocusReviewStackPanel() (tea.Model, tea.Cmd) {
+	return m.focusPanel(ReviewStackPanelFocus)
+}
+
 func (m *model) FocusInstantPromptPanel() (tea.Model, tea.Cmd) {
 	return m.focusPanel(InstantPromptPanelFocus)
 }

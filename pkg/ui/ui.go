@@ -26,6 +26,7 @@ type model struct {
 	list                list.Model
 	contentPanel        viewport.Model
 	reviewPanel         viewport.Model
+	reviewStackPanel    viewport.Model
 	instantPromptPanel  textarea.Model
 	configSummaryPanel  viewport.Model
 	configContentPanel  viewport.Model
@@ -48,6 +49,7 @@ type model struct {
 	listKeyMap          listKeyMap
 	contentKeyMap       contentKeyMap
 	reviewKeyMap        reviewKeyMap
+	reviewStackKeyMap   reviewStackKeyMap
 	promptKeyMap        promptKeyMap
 	configSummaryKeyMap configSummaryKeyMap
 	stateKeyMap         stateKeyMap
@@ -94,6 +96,7 @@ func NewUi(conf config.Config, client openai.Client) model {
 		listKeyMap:          GetListKeymap(),
 		contentKeyMap:       GetContentKeymap(),
 		reviewKeyMap:        GetReviewKeymap(),
+		reviewStackKeyMap:   GetReviewStackKeymap(),
 		promptKeyMap:        GetPromptKeymap(),
 		configSummaryKeyMap: GetConfigSummaryKeymap(),
 		stateKeyMap:         GetStateKeymap(),
@@ -163,17 +166,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.reviewState = msg.state
 	case reviewStackMsg:
 		index := findIndex(m.list.Items(), msg.param)
-		item := m.list.Items()[index].(listItem)
 		if msg.operation == Add {
 			m.reviewStack = append(m.reviewStack, index)
 			m.reviewState = Reviewing
-
-			item.title = replacePrefix(item.title, "* ")
-			m.list.SetItem(index, item)
 		} else {
-			item.title = replacePrefix(item.title, "☑ ")
-			m.list.SetItem(index, item)
-
 			for i, v := range m.reviewStack {
 				if v == index {
 					m.reviewStack = append(m.reviewStack[:i], m.reviewStack[i+1:]...)
@@ -184,6 +180,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.reviewState = NoAction
 			}
 		}
+		itemTitleList := getItemListString(getReviewStackItems(m.list.Items(), m.reviewStack))
+		m.reviewStackPanel.SetContent(itemTitleList)
+		return m, nil
 	case aiContextMsg:
 		index := findIndex(m.list.Items(), msg.itemParam)
 		item := m.list.Items()[index].(listItem)
