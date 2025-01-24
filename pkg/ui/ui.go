@@ -109,6 +109,7 @@ func NewUi(conf config.Config, client openai.Client) model {
 	m.curHistoryIndex = len(m.uiState.PromptHistory)
 	m.loadReviews()
 	m.list.SetItems(getItems(m.conf, m.reviewList))
+	m.onChangeListSelectedItem()
 	return m
 }
 
@@ -199,9 +200,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.spinner, cmd = m.spinner.Update(msg)
 		cmds = append(cmds, cmd)
 	}
-
-	_, cmd = m.onChangeListSelectedItem()
-	cmds = append(cmds, cmd)
 
 	if m.focusState == ListPanelFocus {
 		m.list, cmd = m.list.Update(msg)
