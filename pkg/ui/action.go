@@ -159,21 +159,21 @@ func (m *model) FocusContextPanel() (tea.Model, tea.Cmd) {
 }
 
 func (m *model) InstantPromptHistoryPrev() (tea.Model, tea.Cmd) {
-	if m.curHistoryIndex-1 >= 0 && len(m.uiState.PromptHistory) > 0 {
-		m.instantPromptPanel.SetValue(m.uiState.PromptHistory[m.curHistoryIndex-1])
-		m.curHistoryIndex--
+	if m.currentHistoryIndex-1 >= 0 && len(m.uiState.PromptHistory) > 0 {
+		m.instantPromptPanel.SetValue(m.uiState.PromptHistory[m.currentHistoryIndex-1])
+		m.currentHistoryIndex--
 	}
 
 	return m, nil
 }
 
 func (m *model) InstantPromptHistoryNext() (tea.Model, tea.Cmd) {
-	if m.curHistoryIndex+1 < len(m.uiState.PromptHistory) && len(m.uiState.PromptHistory) > 0 {
-		m.instantPromptPanel.SetValue(m.uiState.PromptHistory[m.curHistoryIndex+1])
-		m.curHistoryIndex++
+	if m.currentHistoryIndex+1 < len(m.uiState.PromptHistory) && len(m.uiState.PromptHistory) > 0 {
+		m.instantPromptPanel.SetValue(m.uiState.PromptHistory[m.currentHistoryIndex+1])
+		m.currentHistoryIndex++
 	} else {
 		m.instantPromptPanel.SetValue("")
-		m.curHistoryIndex = len(m.uiState.PromptHistory)
+		m.currentHistoryIndex = len(m.uiState.PromptHistory)
 	}
 
 	return m, nil

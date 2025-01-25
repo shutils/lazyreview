@@ -45,6 +45,18 @@ func runeWidth(r rune) int {
 	}
 }
 
+func replacePrefix(text string, prefix string) string {
+	runes := []rune(text)
+	prefixRunes := []rune(prefix)
+
+	if len(runes) < len(prefixRunes) {
+		return prefix
+	}
+
+	updatedTitle := string(prefixRunes) + string(runes[len(prefixRunes):])
+	return updatedTitle
+}
+
 func visibleRunes(s string) []rune {
 	ansiEscapePattern := `\x1b\[[0-9;]*m`
 	re := regexp.MustCompile(ansiEscapePattern)

@@ -69,7 +69,7 @@ type model struct {
 	stateKeyMap         stateKeyMap
 	contextKeyMap       contextKeyMap
 	uiState             state.State
-	curHistoryIndex     int
+	currentHistoryIndex int
 	state               state.State
 }
 
@@ -116,11 +116,11 @@ func NewUi(conf config.Config, client openai.Client) model {
 		stateKeyMap:         GetStateKeymap(),
 		contextKeyMap:       GetContextKeymap(),
 		uiState:             state.LoadState(conf.State),
-		curHistoryIndex:     0,
+		currentHistoryIndex: 0,
 		state:               state.State{},
 	}
 	m.UpdateState()
-	m.curHistoryIndex = len(m.uiState.PromptHistory)
+	m.currentHistoryIndex = len(m.uiState.PromptHistory)
 	m.loadReviews()
 	m.list.SetItems(getItems(m.conf, m.reviewList))
 	m.onChangeListSelectedItem()
@@ -146,18 +146,15 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		selectedItem := m.list.SelectedItem().(listItem)
 		index := findIndex(m.list.Items(), msg.param)
 		item := m.list.Items()[index].(listItem)
-		if m.getReviewIndex(item.param) != -1 {
-			m.reviewList[m.getReviewIndex(item.param)] = reviewInfo{
-				Param:  item.param,
-				Review: msg.content,
-				State:  "finish",
-			}
+		review := reviewInfo{
+			Param:  item.param,
+			Review: msg.content,
+			State:  "finish",
+		}
+		if m.isReviewExist(msg.param) {
+			m.reviewList[index] = review
 		} else {
-			m.reviewList = append(m.reviewList, reviewInfo{
-				Param:  item.param,
-				Review: msg.content,
-				State:  "finish",
-			})
+			m.reviewList = append(m.reviewList, review)
 		}
 		m.saveReviews()
 		if selectedItem.param == msg.param {
@@ -171,44 +168,27 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		}
 		m.UpdateState()
-		return m, func() tea.Msg {
-			return reviewStackMsg{
-				param:     msg.param,
-				operation: Remove,
-			}
-		}
+		return m, cmd
 	case reviewStateMsg:
 		m.reviewState = msg.state
 	case reviewStackMsg:
 		index := findIndex(m.list.Items(), msg.param)
 		if msg.operation == Add {
-			m.reviewStack = append(m.reviewStack, index)
-			m.reviewState = Reviewing
+			m.addReviewStack(index)
 		} else {
-			for i, v := range m.reviewStack {
-				if v == index {
-					m.reviewStack = append(m.reviewStack[:i], m.reviewStack[i+1:]...)
-					break
-				}
-			}
-			if len(m.reviewStack) == 0 {
-				m.reviewState = NoAction
-			}
+			m.removeReviewStack(index)
+			m.changeItemTitlePrefix(index, "☑ ")
 		}
-		itemTitleList := getItemListString(getReviewStackItems(m.list.Items(), m.reviewStack))
-		m.reviewStackPanel.SetContent(itemTitleList)
+		m.updateReviewStackPanel()
 		return m, nil
 	case aiContextMsg:
 		index := findIndex(m.list.Items(), msg.itemParam)
-		item := m.list.Items()[index].(listItem)
 		if msg.method == AddContext {
-			item.aiContext = true
+			m.addContextStack(index)
 		} else {
-			item.aiContext = false
+			m.removeContextStack(index)
 		}
-		m.list.SetItem(index, item)
-		itemTitleList := getItemListString(getContextItems(m.list.Items()))
-		m.contextPanel.SetContent(itemTitleList)
+		m.updateContextPanel()
 		return m, nil
 	default:
 		m.spinner, cmd = m.spinner.Update(msg)
@@ -238,4 +218,53 @@ func (m *model) UpdateState() (tea.Model, tea.Cmd) {
 	m.statePanel.SetContent(m.state.ShowUsage(m.conf.ModelCost))
 	m.stateDetailPanel.SetContent(m.state.ShowUsedToken())
 	return m, nil
+}
+
+func (m *model) isReviewExist(itemParam string) bool {
+	return m.getReviewIndex(itemParam) != -1
+}
+
+func (m *model) addReviewStack(index int) {
+	m.reviewStack = append(m.reviewStack, index)
+	m.reviewState = Reviewing
+}
+
+func (m *model) removeReviewStack(index int) {
+	for i, v := range m.reviewStack {
+		if v == index {
+			m.reviewStack = append(m.reviewStack[:i], m.reviewStack[i+1:]...)
+			break
+		}
+	}
+	if len(m.reviewStack) == 0 {
+		m.reviewState = NoAction
+	}
+}
+
+func (m *model) updateReviewStackPanel() {
+	itemTitleList := getItemListString(getReviewStackItems(m.list.Items(), m.reviewStack))
+	m.reviewStackPanel.SetContent(itemTitleList)
+}
+
+func (m *model) updateContextPanel() {
+	itemTitleList := getItemListString(getContextItems(m.list.Items()))
+	m.contextPanel.SetContent(itemTitleList)
+}
+
+func (m *model) addContextStack(index int) {
+	item := m.list.Items()[index].(listItem)
+	item.aiContext = true
+	m.list.SetItem(index, item)
+}
+
+func (m *model) removeContextStack(index int) {
+	item := m.list.Items()[index].(listItem)
+	item.aiContext = false
+	m.list.SetItem(index, item)
+}
+
+func (m *model) changeItemTitlePrefix(index int, prefix string) {
+	item := m.list.Items()[index].(listItem)
+	item.title = replacePrefix(item.title, prefix)
+	m.list.SetItem(index, item)
 }
