@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/list"
@@ -15,8 +16,13 @@ func (m *model) onChangeListSelectedItem() (tea.Model, tea.Cmd) {
 	if ok && m.getReviewIndex(selectedItem.param) != -1 {
 		reviewContent = getRendered(m.reviewList[m.getReviewIndex(selectedItem.param)].Review, m.conf.Glamour, m.reviewPanel.Width)
 	}
-	if m.conf.Previewer != "" {
-		itemContent = customPreviewer(m.conf.Previewer, selectedItem.param)
+	if selectedItem.sourceName != "" {
+		source, _ := getSource(selectedItem.sourceName, m.conf.Sources)
+		if source.Previewer != "" {
+			itemContent = customPreviewer(source.Previewer, selectedItem.param)
+		} else {
+			itemContent = defaultPreviewer(selectedItem.param)
+		}
 	} else {
 		itemContent = defaultPreviewer(selectedItem.param)
 	}
@@ -48,8 +54,10 @@ func findIndex(items []list.Item, param string) int {
 func getItems(conf config.Config, reviewList []reviewInfo) []list.Item {
 	var items []list.Item
 
-	if conf.Collector != "" {
-		items = customCollector(conf)
+	if len(conf.Sources) > 0 && !isDisabledAllSource(conf.Sources) {
+		items = collectItemsFromSources(conf.Sources)
+	} else if conf.Collector != "" {
+		items = customCollector(conf.Collector, "")
 	} else {
 		items = defaultItemCollector(conf)
 	}
@@ -77,9 +85,10 @@ func getItems(conf config.Config, reviewList []reviewInfo) []list.Item {
 		}
 
 		items[i] = listItem{
-			title:     title,
-			param:     _item.Description(),
-			aiContext: false,
+			title:      title,
+			param:      _item.Description(),
+			aiContext:  false,
+			sourceName: _item.sourceName,
 		}
 	}
 
@@ -131,4 +140,36 @@ func getItemListString(items []list.Item) string {
 	}
 
 	return strings.Join(params, "\n")
+}
+
+func isDisabledAllSource(sources []config.Source) bool {
+	for _, source := range sources {
+		if source.Enabled {
+			return false
+		}
+	}
+	return true
+}
+
+// itemsにsourceの名前を付与する
+func collectItemsFromSources(sources []config.Source) []list.Item {
+	var items []list.Item
+
+	for _, source := range sources {
+		if source.Enabled {
+			collectedItems := customCollector(source.Collector, source.Name)
+			items = append(items, collectedItems...)
+		}
+	}
+
+	return items
+}
+
+func getSource(name string, sources []config.Source) (config.Source, error) {
+	for _, source := range sources {
+		if source.Name == name {
+			return source, nil
+		}
+	}
+	return config.Source{}, fmt.Errorf("source with name '%s' not found", name)
 }

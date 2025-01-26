@@ -18,6 +18,14 @@ type ModelCost struct {
 	Input, Output float64
 }
 
+type Source struct {
+	Name      string
+	Collector string
+	Previewer string
+	Prompt    string
+	Enabled   bool
+}
+
 const projectName = "lazyreview"
 
 // Config holds the configuration details for the application.
@@ -40,6 +48,7 @@ type Config struct {
 	MaxTokens     int       `toml:"max_tokens"`
 	TmpReviewPath string    `toml:"-"`
 	Opener        string    `toml:"opener"`
+	Sources       []Source  `toml:"sources"`
 }
 
 // loadConfig reads the configuration from the specified file.
@@ -144,7 +153,15 @@ func (c Config) ToStringArray() []string {
 		fmt.Sprintf("max_tokens=%d", c.MaxTokens),
 		fmt.Sprintf("tmp_review_path=%s", c.TmpReviewPath),
 		fmt.Sprintf("opener=%s", c.Opener),
+		//
 	)
+
+	// Append Sources
+	for _, source := range c.Sources {
+		result = append(result, fmt.Sprintf("source={Name: %s, Collector: %s, Previewer: %s, Prompt: %s, Enabled: %t}",
+			source.Name, source.Collector, source.Previewer, source.Prompt, source.Enabled))
+	}
+
 	return result
 }
 

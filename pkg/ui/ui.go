@@ -26,8 +26,8 @@ type winSize struct {
 }
 
 type listItem struct {
-	title, param string
-	aiContext    bool
+	title, param, sourceName string
+	aiContext                bool
 }
 
 func (i listItem) Title() string       { return i.title }
