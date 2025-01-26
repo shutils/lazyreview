@@ -152,7 +152,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			State:  "finish",
 		}
 		if m.isReviewExist(msg.param) {
-			m.reviewList[index] = review
+			m.reviewList[m.getReviewIndex(msg.param)] = review
 		} else {
 			m.reviewList = append(m.reviewList, review)
 		}
