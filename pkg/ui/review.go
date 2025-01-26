@@ -92,16 +92,7 @@ func (m *model) reviewContent() tea.Cmd {
 		if ok {
 			// Generate content by including contextItems
 			content := ""
-			if selectedItem.sourceName != "" {
-				source, _ := getSource(selectedItem.sourceName, m.conf.Sources)
-				if source.Previewer != "" {
-					content = customPreviewer(source.Previewer, selectedItem.param)
-				} else {
-					content = defaultPreviewer(selectedItem.param)
-				}
-			} else {
-				content = defaultPreviewer(selectedItem.param)
-			}
+			content = previewContent(selectedItem, m.conf.Sources)
 
 			// Append contextItems with param as the first line, followed by content
 			for _, item := range contextItems {
@@ -110,17 +101,7 @@ func (m *model) reviewContent() tea.Cmd {
 				if !ok {
 					continue
 				}
-				if item.sourceName != "" {
-					source, _ := getSource(item.sourceName, m.conf.Sources)
-					if source.Previewer != "" {
-						contextContent = customPreviewer(m.conf.Previewer, item.param)
-					} else {
-						contextContent = defaultPreviewer(item.param)
-					}
-				} else {
-					contextContent = defaultPreviewer(item.param)
-				}
-				contextContent = item.param + "\n" + contextContent
+				contextContent = item.param + "\n" + previewContent(item, m.conf.Sources)
 				content = contextContent + "\n\n" + content
 			}
 			review = content

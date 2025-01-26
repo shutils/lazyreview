@@ -7,9 +7,14 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+
+	"github.com/shutils/lazyreview/pkg/config"
 )
 
 func defaultPreviewer(param string) string {
+	if param == "" {
+		return "Error: No param"
+	}
 	var fallbackText = "This item is not text"
 	content, err := os.ReadFile(param)
 	if err != nil {
@@ -29,6 +34,12 @@ func defaultPreviewer(param string) string {
 }
 
 func customPreviewer(previewer string, param string) string {
+	if param == "" {
+		return "Error: No param"
+	}
+	if previewer == "" {
+		return "Error: No previewer"
+	}
 	cmdArray := strings.Split(previewer, " ")
 	args := cmdArray[1:]
 	args = append(args, param)
@@ -48,4 +59,14 @@ func customPreviewer(previewer string, param string) string {
 		output += "\n" + stderr.String()
 	}
 	return output
+}
+
+func previewContent(item listItem, sources []config.Source) string {
+	if item.sourceName != "" {
+		source, _ := getSource(item.sourceName, sources)
+		if source.Previewer != "" {
+			return customPreviewer(source.Previewer, item.param)
+		}
+	}
+	return defaultPreviewer(item.param)
 }

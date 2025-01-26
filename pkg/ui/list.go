@@ -12,19 +12,9 @@ import (
 func (m *model) onChangeListSelectedItem() (tea.Model, tea.Cmd) {
 	selectedItem, ok := m.list.SelectedItem().(listItem)
 	reviewContent := "No review"
-	itemContent := ""
+	itemContent := previewContent(selectedItem, m.conf.Sources)
 	if ok && m.getReviewIndex(selectedItem.param) != -1 {
 		reviewContent = getRendered(m.reviewList[m.getReviewIndex(selectedItem.param)].Review, m.conf.Glamour, m.reviewPanel.Width)
-	}
-	if selectedItem.sourceName != "" {
-		source, _ := getSource(selectedItem.sourceName, m.conf.Sources)
-		if source.Previewer != "" {
-			itemContent = customPreviewer(source.Previewer, selectedItem.param)
-		} else {
-			itemContent = defaultPreviewer(selectedItem.param)
-		}
-	} else {
-		itemContent = defaultPreviewer(selectedItem.param)
 	}
 	m.loadReviewPanel(reviewContent)
 	m.loadContentPanel(itemContent)
@@ -157,6 +147,9 @@ func collectItemsFromSources(sources []config.Source) []list.Item {
 
 	for _, source := range sources {
 		if source.Enabled {
+			if source.Collector == "" {
+				continue
+			}
 			collectedItems := customCollector(source.Collector, source.Name)
 			items = append(items, collectedItems...)
 		}
