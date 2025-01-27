@@ -13,8 +13,8 @@ func (m *model) onChangeListSelectedItem() (tea.Model, tea.Cmd) {
 	selectedItem, ok := m.list.SelectedItem().(listItem)
 	reviewContent := "No review"
 	itemContent := previewContent(selectedItem, m.conf.Sources)
-	if ok && m.getReviewIndex(selectedItem.param) != -1 {
-		reviewContent = getRendered(m.reviewList[m.getReviewIndex(selectedItem.param)].Review, m.conf.Glamour, m.reviewPanel.Width)
+	if ok && m.getReviewIndex(selectedItem.id) != -1 {
+		reviewContent = getRendered(m.reviewList[m.getReviewIndex(selectedItem.id)].Review, m.conf.Glamour, m.reviewPanel.Width)
 	}
 	m.loadReviewPanel(reviewContent)
 	m.loadContentPanel(itemContent)
@@ -32,9 +32,9 @@ func (m *model) loadContentPanel(itemContent string) {
 }
 
 // Returns a index of the item with the given param
-func findIndex(items []list.Item, param string) int {
+func findIndex(items []list.Item, id string) int {
 	for i, item := range items {
-		if item.(listItem).param == param {
+		if item.(listItem).id == id {
 			return i
 		}
 	}
@@ -54,7 +54,7 @@ func getItems(conf config.Config, reviewList []reviewInfo) []list.Item {
 
 	reviewStateMap := make(map[string]string)
 	for _, review := range reviewList {
-		reviewStateMap[review.Param] = review.State
+		reviewStateMap[review.ID] = review.State
 	}
 
 	for i, item := range items {
@@ -64,7 +64,8 @@ func getItems(conf config.Config, reviewList []reviewInfo) []list.Item {
 		}
 
 		title := _item.Title()
-		if state, exists := reviewStateMap[_item.Description()]; exists {
+		id := makeHash(_item)
+		if state, exists := reviewStateMap[id]; exists {
 			if state == "finish" {
 				title = "☑ " + title
 			} else {
@@ -79,6 +80,7 @@ func getItems(conf config.Config, reviewList []reviewInfo) []list.Item {
 			param:      _item.Description(),
 			aiContext:  false,
 			sourceName: _item.sourceName,
+			id:         id,
 		}
 	}
 
@@ -165,4 +167,9 @@ func getSource(name string, sources []config.Source) (config.Source, error) {
 		}
 	}
 	return config.Source{}, fmt.Errorf("source with name '%s' not found", name)
+}
+
+func makeHash(item listItem) string {
+	seed := item.param + item.sourceName
+	return fmt.Sprintf("%x", seed)
 }

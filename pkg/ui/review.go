@@ -13,6 +13,7 @@ import (
 
 // JSONレビュー情報
 type reviewInfo struct {
+	ID     string `json:"id"`
 	Param  string `json:"param"`
 	Review string `json:"review"`
 	State  string `json:"state"`
@@ -25,12 +26,12 @@ type reviewStateMsg struct {
 }
 
 type reviewMsg struct {
-	param   string
+	id      string
 	content string
 }
 
 type reviewStackMsg struct {
-	param     string
+	id        string
 	operation ReviewStackOperation
 }
 
@@ -49,7 +50,12 @@ const (
 func (m *model) saveReviews() {
 	var reviews []reviewInfo
 	for _, review := range m.reviewList {
-		reviews = append(reviews, reviewInfo{Param: review.Param, Review: review.Review, State: "finish"})
+		reviews = append(reviews, reviewInfo{
+			ID:     review.ID,
+			Param:  review.Param,
+			Review: review.Review,
+			State:  "finish",
+		})
 	}
 	jsonData, _ := json.MarshalIndent(reviews, "", "  ")
 	_ = os.WriteFile(m.conf.Output, jsonData, 0644)
@@ -70,9 +76,9 @@ func (m *model) loadReviews() {
 	}
 }
 
-func (m *model) getReviewIndex(param string) int {
+func (m *model) getReviewIndex(id string) int {
 	for i, review := range m.reviewList {
-		if review.Param == param {
+		if review.ID == id {
 			return i
 		}
 	}
@@ -105,7 +111,6 @@ func (m *model) reviewContent() tea.Cmd {
 				content = contextContent + "\n\n" + content
 			}
 			review = content
-
 			if m.instantPrompt == "" {
 				chat, err = m.client.Getreviewfromchatgpt(content, m.conf)
 			} else {
@@ -130,7 +135,7 @@ func (m *model) reviewContent() tea.Cmd {
 			state.SaveState(m.stateFile, m.uiState)
 		}
 		return reviewMsg{
-			param:   selectedItem.param,
+			id:      selectedItem.id,
 			content: review,
 		}
 
