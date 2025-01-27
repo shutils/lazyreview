@@ -37,7 +37,7 @@ func (m *model) ReviewStack() (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
 	cmds = append(cmds, func() tea.Msg {
 		return reviewStackMsg{
-			param:     item.param,
+			id:        item.id,
 			operation: Add,
 		}
 	})
@@ -55,8 +55,8 @@ func (m *model) ToggleAiContext() (tea.Model, tea.Cmd) {
 	}
 	cmd := func() tea.Msg {
 		return aiContextMsg{
-			method:    method,
-			itemParam: item.param,
+			method: method,
+			id:     item.id,
 		}
 	}
 	return m, cmd
@@ -185,11 +185,11 @@ func (m *model) OpenCurrentReview() (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 
-	if m.getReviewIndex(selectedItem.param) == -1 {
+	if m.getReviewIndex(selectedItem.id) == -1 {
 		return m, nil
 	}
 
-	review := m.reviewList[m.getReviewIndex(selectedItem.param)].Review
+	review := m.reviewList[m.getReviewIndex(selectedItem.id)].Review
 	state.SaveTmpReview(m.conf.TmpReviewPath, review)
 
 	exec.Command(m.conf.Opener, m.conf.TmpReviewPath).Start()

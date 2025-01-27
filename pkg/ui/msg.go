@@ -8,6 +8,6 @@ const (
 )
 
 type aiContextMsg struct {
-	method    AiContextMethod
-	itemParam string
+	method AiContextMethod
+	id     string
 }

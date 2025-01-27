@@ -26,8 +26,8 @@ type winSize struct {
 }
 
 type listItem struct {
-	title, param string
-	aiContext    bool
+	title, param, sourceName, id string
+	aiContext                    bool
 }
 
 func (i listItem) Title() string       { return i.title }
@@ -144,26 +144,30 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.handleWindowSize(msg)
 	case reviewMsg:
 		selectedItem := m.list.SelectedItem().(listItem)
-		index := findIndex(m.list.Items(), msg.param)
+		index := findIndex(m.list.Items(), msg.id)
+		if index == -1 {
+			return m, nil
+		}
 		item := m.list.Items()[index].(listItem)
 		review := reviewInfo{
+			ID:     item.id,
 			Param:  item.param,
 			Review: msg.content,
 			State:  "finish",
 		}
-		if m.isReviewExist(msg.param) {
-			m.reviewList[m.getReviewIndex(msg.param)] = review
+		if m.isReviewExist(msg.id) {
+			m.reviewList[m.getReviewIndex(msg.id)] = review
 		} else {
 			m.reviewList = append(m.reviewList, review)
 		}
 		m.saveReviews()
-		if selectedItem.param == msg.param {
+		if selectedItem.id == msg.id {
 			m.reviewPanel.SetContent(msg.content)
 			m.onChangeListSelectedItem()
 		}
 		cmd = func() tea.Msg {
 			return reviewStackMsg{
-				param:     msg.param,
+				id:        msg.id,
 				operation: Remove,
 			}
 		}
@@ -172,7 +176,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case reviewStateMsg:
 		m.reviewState = msg.state
 	case reviewStackMsg:
-		index := findIndex(m.list.Items(), msg.param)
+		index := findIndex(m.list.Items(), msg.id)
+		if index == -1 {
+			return m, nil
+		}
 		if msg.operation == Add {
 			m.addReviewStack(index)
 		} else {
@@ -182,7 +189,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.updateReviewStackPanel()
 		return m, nil
 	case aiContextMsg:
-		index := findIndex(m.list.Items(), msg.itemParam)
+		index := findIndex(m.list.Items(), msg.id)
+		if index == -1 {
+			return m, nil
+		}
 		if msg.method == AddContext {
 			m.addContextStack(index)
 		} else {
@@ -220,8 +230,8 @@ func (m *model) UpdateState() (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-func (m *model) isReviewExist(itemParam string) bool {
-	return m.getReviewIndex(itemParam) != -1
+func (m *model) isReviewExist(id string) bool {
+	return m.getReviewIndex(id) != -1
 }
 
 func (m *model) addReviewStack(index int) {

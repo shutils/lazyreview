@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/list"
@@ -11,14 +12,9 @@ import (
 func (m *model) onChangeListSelectedItem() (tea.Model, tea.Cmd) {
 	selectedItem, ok := m.list.SelectedItem().(listItem)
 	reviewContent := "No review"
-	itemContent := ""
-	if ok && m.getReviewIndex(selectedItem.param) != -1 {
-		reviewContent = getRendered(m.reviewList[m.getReviewIndex(selectedItem.param)].Review, m.conf.Glamour, m.reviewPanel.Width)
-	}
-	if m.conf.Previewer != "" {
-		itemContent = customPreviewer(m.conf.Previewer, selectedItem.param)
-	} else {
-		itemContent = defaultPreviewer(selectedItem.param)
+	itemContent := previewContent(selectedItem, m.conf.Sources)
+	if ok && m.getReviewIndex(selectedItem.id) != -1 {
+		reviewContent = getRendered(m.reviewList[m.getReviewIndex(selectedItem.id)].Review, m.conf.Glamour, m.reviewPanel.Width)
 	}
 	m.loadReviewPanel(reviewContent)
 	m.loadContentPanel(itemContent)
@@ -36,9 +32,9 @@ func (m *model) loadContentPanel(itemContent string) {
 }
 
 // Returns a index of the item with the given param
-func findIndex(items []list.Item, param string) int {
+func findIndex(items []list.Item, id string) int {
 	for i, item := range items {
-		if item.(listItem).param == param {
+		if item.(listItem).id == id {
 			return i
 		}
 	}
@@ -48,15 +44,17 @@ func findIndex(items []list.Item, param string) int {
 func getItems(conf config.Config, reviewList []reviewInfo) []list.Item {
 	var items []list.Item
 
-	if conf.Collector != "" {
-		items = customCollector(conf)
+	if len(conf.Sources) > 0 && !isDisabledAllSource(conf.Sources) {
+		items = collectItemsFromSources(conf.Sources)
+	} else if conf.Collector != "" {
+		items = customCollector(conf.Collector, "")
 	} else {
 		items = defaultItemCollector(conf)
 	}
 
 	reviewStateMap := make(map[string]string)
 	for _, review := range reviewList {
-		reviewStateMap[review.Param] = review.State
+		reviewStateMap[review.ID] = review.State
 	}
 
 	for i, item := range items {
@@ -66,7 +64,8 @@ func getItems(conf config.Config, reviewList []reviewInfo) []list.Item {
 		}
 
 		title := _item.Title()
-		if state, exists := reviewStateMap[_item.Description()]; exists {
+		id := makeHash(_item)
+		if state, exists := reviewStateMap[id]; exists {
 			if state == "finish" {
 				title = "☑ " + title
 			} else {
@@ -77,9 +76,11 @@ func getItems(conf config.Config, reviewList []reviewInfo) []list.Item {
 		}
 
 		items[i] = listItem{
-			title:     title,
-			param:     _item.Description(),
-			aiContext: false,
+			title:      title,
+			param:      _item.Description(),
+			aiContext:  false,
+			sourceName: _item.sourceName,
+			id:         id,
 		}
 	}
 
@@ -131,4 +132,44 @@ func getItemListString(items []list.Item) string {
 	}
 
 	return strings.Join(params, "\n")
+}
+
+func isDisabledAllSource(sources []config.Source) bool {
+	for _, source := range sources {
+		if source.Enabled {
+			return false
+		}
+	}
+	return true
+}
+
+// itemsにsourceの名前を付与する
+func collectItemsFromSources(sources []config.Source) []list.Item {
+	var items []list.Item
+
+	for _, source := range sources {
+		if source.Enabled {
+			if source.Collector == "" {
+				continue
+			}
+			collectedItems := customCollector(source.Collector, source.Name)
+			items = append(items, collectedItems...)
+		}
+	}
+
+	return items
+}
+
+func getSource(name string, sources []config.Source) (config.Source, error) {
+	for _, source := range sources {
+		if source.Name == name {
+			return source, nil
+		}
+	}
+	return config.Source{}, fmt.Errorf("source with name '%s' not found", name)
+}
+
+func makeHash(item listItem) string {
+	seed := item.param + item.sourceName
+	return fmt.Sprintf("%x", seed)
 }
