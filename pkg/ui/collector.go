@@ -55,6 +55,10 @@ func customCollector(collector, sourceName string) []list.Item {
 	}
 
 	output := stdout.String()
+	if output == "" {
+		return []list.Item{}
+	}
+
 	paramStrings := strings.Split(strings.TrimSpace(output), "\n")
 	for _, param := range paramStrings {
 		items = append(items, listItem{title: filepath.Base(param), param: param, sourceName: sourceName})
