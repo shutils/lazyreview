@@ -47,7 +47,7 @@ const (
 )
 
 var (
-	baseStyle = lipgloss.NewStyle().BorderStyle(lipgloss.NormalBorder())
+	baseStyle = lipgloss.NewStyle().BorderStyle(lipgloss.RoundedBorder())
 )
 
 func runeWidth(r rune) int {
@@ -91,8 +91,8 @@ func stringWidth(runes []rune) int {
 
 // POC
 func InsertTitleWithOffset(rendered, title string) string {
-	borderStart := "┌"
-	borderEnd := "┐"
+	borderStart := "╭"
+	borderEnd := "╮"
 	borderBar := "─"
 
 	lines := strings.Split(rendered, "\n")
