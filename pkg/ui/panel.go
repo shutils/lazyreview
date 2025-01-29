@@ -29,6 +29,8 @@ const (
 	ConfigSummaryPanelFocus
 	StatePanelFocus
 	ContextPanelFocus
+	SourceListPanelFocus
+	Other
 )
 
 const (
@@ -37,6 +39,7 @@ const (
 	reviewStackPanelHeight   = 5
 	contextPanelHeight       = 5
 	instantPromptPanelHeight = 5
+	sourceListPanelHeight    = 6
 	footerHeight             = 1
 
 	borderHeight = 1
@@ -128,24 +131,26 @@ func (m *model) makeView() string {
 	globalHelp := helpModel.View(m.globalKeyMap)
 	helpString := m.getHelpString(helpModel, globalHelp)
 
-	listPanel := m.buildPanel(m.list.View(), m.getPanelStyle(ListPanelFocus), m.list.Width(), "List")
-	contentPanel := m.buildPanel(m.contentPanel.View(), m.getPanelStyle(ContentPanelFocus), m.contentPanel.Width, "Content")
-	reviewPanel := m.buildPanel(m.reviewPanel.View(), m.getPanelStyle(ReviewPanelFocus), m.reviewPanel.Width, "Review")
-	reviewStackPanel := m.buildPanel(m.reviewStackPanel.View(), m.getPanelStyle(ReviewStackPanelFocus), m.reviewStackPanel.Width, "Review stack")
-	configPanel := m.buildPanel(m.configSummaryPanel.View(), m.getPanelStyle(ConfigSummaryPanelFocus), m.configSummaryPanel.Width, "Config")
-	configContentPanel := m.buildPanel(m.configContentPanel.View(), m.getPanelStyle(ConfigSummaryPanelFocus), m.configContentPanel.Width, "Config content")
-	statePanel := m.buildPanel(m.statePanel.View(), m.getPanelStyle(StatePanelFocus), m.statePanel.Width, "State")
-	stateDetailPanel := m.buildPanel(m.stateDetailPanel.View(), m.getPanelStyle(StatePanelFocus), m.stateDetailPanel.Width, "State detail")
-	instantPromptPanel := m.buildPanel(m.instantPromptPanel.View(), m.getPanelStyle(InstantPromptPanelFocus), m.panelSize.secondlyPanelWidth, "Instant prompt")
-	contextPanel := m.buildPanel(m.contextPanel.View(), m.getPanelStyle(ContextPanelFocus), m.contextPanel.Width, "Context")
+	listPanel := m.buildPanel(m.list.View(), m.getPanelStyle(ListPanelFocus), m.list.Width(), m.list.Height(), "List")
+	contentPanel := m.buildPanel(m.contentPanel.View(), m.getPanelStyle(ContentPanelFocus), m.contentPanel.Width, m.contentPanel.Height, "Content")
+	reviewPanel := m.buildPanel(m.reviewPanel.View(), m.getPanelStyle(ReviewPanelFocus), m.reviewPanel.Width, m.reviewPanel.Height, "Review")
+	reviewStackPanel := m.buildPanel(m.reviewStackPanel.View(), m.getPanelStyle(ReviewStackPanelFocus), m.reviewStackPanel.Width, m.reviewStackPanel.Height, "Review stack")
+	configPanel := m.buildPanel(m.configSummaryPanel.View(), m.getPanelStyle(ConfigSummaryPanelFocus), m.configSummaryPanel.Width, m.configSummaryPanel.Height, "Config")
+	configContentPanel := m.buildPanel(m.configContentPanel.View(), m.getPanelStyle(Other), m.configContentPanel.Width, m.configContentPanel.Height, "Config content")
+	statePanel := m.buildPanel(m.statePanel.View(), m.getPanelStyle(StatePanelFocus), m.statePanel.Width, m.statePanel.Height, "State")
+	stateDetailPanel := m.buildPanel(m.stateDetailPanel.View(), m.getPanelStyle(Other), m.stateDetailPanel.Width, m.stateDetailPanel.Height, "State detail")
+	instantPromptPanel := m.buildPanel(m.instantPromptPanel.View(), m.getPanelStyle(InstantPromptPanelFocus), m.panelSize.secondlyPanelWidth, instantPromptPanelHeight, "Instant prompt")
+	contextPanel := m.buildPanel(m.contextPanel.View(), m.getPanelStyle(ContextPanelFocus), m.contextPanel.Width, m.contextPanel.Height, "Context")
+	sourceListPanel := m.buildPanel(m.sourceListPanel.View(), m.getPanelStyle(SourceListPanelFocus), m.sourceListPanel.Width(), m.sourceListPanel.Height(), "Source list")
+	sourceDetailPanel := m.buildPanel(m.sourceDetailPanel.View(), m.getPanelStyle(Other), m.sourceDetailPanel.Width, m.sourceDetailPanel.Height, "Source detail")
 
-	primaryPanels := m.buildPrimaryPanels(statePanel, listPanel, reviewStackPanel, contextPanel, configPanel)
+	primaryPanels := m.buildPrimaryPanels(statePanel, listPanel, reviewStackPanel, contextPanel, sourceListPanel, configPanel)
 	reviewCombiPanels := m.buildReviewCombiPanels(contentPanel, reviewPanel, instantPromptPanel)
 	contentPanels := m.buildContentPanels(contentPanel, instantPromptPanel)
 	reviewPanels := m.buildReviewPanels(reviewPanel, instantPromptPanel)
 
 	bottomLine := lipgloss.JoinHorizontal(lipgloss.Left, state, " ", helpString)
-	return m.buildWindowBasedOnFocus(primaryPanels, configContentPanel, stateDetailPanel, reviewCombiPanels, contentPanels, reviewPanels, bottomLine)
+	return m.buildWindowBasedOnFocus(primaryPanels, configContentPanel, stateDetailPanel, reviewCombiPanels, contentPanels, reviewPanels, sourceDetailPanel, bottomLine)
 }
 
 func (m *model) getHelpString(helpModel help.Model, globalHelp string) string {
@@ -166,6 +171,8 @@ func (m *model) getHelpString(helpModel help.Model, globalHelp string) string {
 		return MakeBottomLine(globalHelp, helpModel.View(m.stateKeyMap))
 	case ContextPanelFocus:
 		return MakeBottomLine(globalHelp, helpModel.View(m.contextKeyMap))
+	case SourceListPanelFocus:
+		return MakeBottomLine(globalHelp, helpModel.View(m.sourceListKeyMap))
 	default:
 		return ""
 	}
@@ -179,7 +186,7 @@ func (m *model) getPanelStyle(focus FocusState) lipgloss.Style {
 	return style
 }
 
-func (m *model) buildWindowBasedOnFocus(primaryPanels, configContentPanel, stateDetailPanel, reviewCombiPanels, contentPanels, reviewPanels, bottomLine string) string {
+func (m *model) buildWindowBasedOnFocus(primaryPanels, configContentPanel, stateDetailPanel, reviewCombiPanels, contentPanels, reviewPanels, sourceDetailPanel, bottomLine string) string {
 	switch m.focusState {
 	case ConfigSummaryPanelFocus:
 		return m.buildWindow(primaryPanels, configContentPanel, bottomLine)
@@ -191,6 +198,8 @@ func (m *model) buildWindowBasedOnFocus(primaryPanels, configContentPanel, state
 		return m.buildWindowBasedOnZoom(primaryPanels, reviewCombiPanels, contentPanels, bottomLine)
 	case ReviewPanelFocus, InstantPromptPanelFocus:
 		return m.buildWindowBasedOnZoom(primaryPanels, reviewCombiPanels, reviewPanels, bottomLine)
+	case SourceListPanelFocus:
+		return m.buildWindow(primaryPanels, sourceDetailPanel, bottomLine)
 	default:
 		return ""
 	}
@@ -248,7 +257,7 @@ func (m *model) setPrimaryPanelSizes() {
 		configSummaryPanelOuterHeight = configSummaryPanelHeight + borderHeight*2
 	)
 
-	listPanelHeight := m.winSize.height - stateSummaryPanelOuterHeight - reviewStackPanelOuterHeight - contextPanelOuterHeight - configSummaryPanelOuterHeight - footerHeight - borderHeight*2
+	listPanelHeight := m.winSize.height - stateSummaryPanelOuterHeight - reviewStackPanelOuterHeight - contextPanelOuterHeight - configSummaryPanelOuterHeight - footerHeight - borderHeight*2 - sourceListPanelHeight - borderHeight*2
 	primaryAreaWidth, _ := m.calcAreaSize()
 
 	m.list.SetSize(primaryAreaWidth-borderWidth*2, listPanelHeight)
@@ -260,6 +269,7 @@ func (m *model) setPrimaryPanelSizes() {
 	m.statePanel.Height = stateSummaryPanelHeight
 	m.contextPanel.Width = primaryAreaWidth - borderWidth*2
 	m.contextPanel.Height = contextPanelHeight
+	m.sourceListPanel.SetSize(primaryAreaWidth-borderWidth*2, sourceListPanelHeight)
 }
 
 func (m *model) setSecondaryPanelSizes() {
@@ -294,10 +304,13 @@ func (m *model) setSecondaryPanelSizes() {
 
 	m.stateDetailPanel.Width = secondlyAreaWidth - borderWidth*2
 	m.stateDetailPanel.Height = m.winSize.height - borderHeight*2 - footerHeight
+
+	m.sourceDetailPanel.Width = secondlyAreaWidth - borderWidth*2
+	m.sourceDetailPanel.Height = m.winSize.height - borderHeight*2 - footerHeight
 }
 
-func (m *model) buildPrimaryPanels(statePanel, listPanel, reviewStackPanel, contextPanel, configPanel string) string {
-	return lipgloss.JoinVertical(lipgloss.Top, statePanel, listPanel, reviewStackPanel, contextPanel, configPanel)
+func (m *model) buildPrimaryPanels(statePanel, listPanel, reviewStackPanel, contextPanel, sourceListPanel, configPanel string) string {
+	return lipgloss.JoinVertical(lipgloss.Top, statePanel, listPanel, reviewStackPanel, contextPanel, sourceListPanel, configPanel)
 }
 
 func (m *model) buildReviewCombiPanels(contentPanel, reviewPanel, instantPromptPanel string) string {
@@ -312,8 +325,8 @@ func (m *model) buildReviewPanels(reviewPanel, instantPromptPanel string) string
 	return lipgloss.JoinVertical(lipgloss.Top, lipgloss.JoinHorizontal(lipgloss.Left, reviewPanel), instantPromptPanel)
 }
 
-func (m *model) buildPanel(p string, s lipgloss.Style, w int, title string) string {
-	return InsertTitleWithOffset(s.Width(w).Render(p), title)
+func (m *model) buildPanel(p string, s lipgloss.Style, w, h int, title string) string {
+	return InsertTitleWithOffset(s.Width(w).Height(h).Render(p), title)
 }
 
 func (m *model) buildWindow(primary, secondly, bottom string) string {
@@ -341,7 +354,7 @@ func getRendered(text string, style string, width int) string {
 }
 
 func isFocusPrimary(state FocusState) bool {
-	if state == ListPanelFocus || state == ConfigSummaryPanelFocus || state == StatePanelFocus || state == ContextPanelFocus || state == ReviewStackPanelFocus {
+	if state == ListPanelFocus || state == ConfigSummaryPanelFocus || state == StatePanelFocus || state == ContextPanelFocus || state == ReviewStackPanelFocus || state == SourceListPanelFocus {
 		return true
 	}
 	return false

@@ -123,7 +123,12 @@ func (m *model) BlurInstantPrompt() (tea.Model, tea.Cmd) {
 
 func (m *model) focusPanel(panel FocusState) (tea.Model, tea.Cmd) {
 	m.focusState = panel
-	return *m, nil
+	cmd := func() tea.Msg {
+		return updateFocusPanelMsg{
+			target: panel,
+		}
+	}
+	return *m, cmd
 }
 
 func (m *model) FocusListPanel() (tea.Model, tea.Cmd) {
@@ -156,6 +161,10 @@ func (m *model) FocusStatePanel() (tea.Model, tea.Cmd) {
 
 func (m *model) FocusContextPanel() (tea.Model, tea.Cmd) {
 	return m.focusPanel(ContextPanelFocus)
+}
+
+func (m *model) FocusSourceListPanel() (tea.Model, tea.Cmd) {
+	return m.focusPanel(SourceListPanelFocus)
 }
 
 func (m *model) InstantPromptHistoryPrev() (tea.Model, tea.Cmd) {
@@ -194,4 +203,13 @@ func (m *model) OpenCurrentReview() (tea.Model, tea.Cmd) {
 
 	exec.Command(m.conf.Opener, m.conf.TmpReviewPath).Start()
 	return m, nil
+}
+
+func (m *model) ToggleSourceEnabled() (tea.Model, tea.Cmd) {
+	selectedItem := m.sourceListPanel.SelectedItem().(sourceItem)
+	m.conf.ToggleSourceEnabled(selectedItem.name)
+	cmd := func() tea.Msg {
+		return updateSourceListMsg{}
+	}
+	return m, cmd
 }
