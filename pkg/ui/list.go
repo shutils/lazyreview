@@ -78,29 +78,12 @@ func getItems(conf config.Config, reviewList []reviewInfo) []list.Item {
 		items[i] = listItem{
 			title:      title,
 			param:      _item.Description(),
-			aiContext:  false,
 			sourceName: _item.sourceName,
 			id:         id,
 		}
 	}
 
 	return items
-}
-
-func getContextItems(items []list.Item) []list.Item {
-	var _items []list.Item
-
-	for _, item := range items {
-		_item, ok := item.(listItem)
-		if !ok {
-			continue
-		}
-		if _item.aiContext {
-			_items = append(_items, _item)
-		}
-	}
-
-	return _items
 }
 
 func getReviewStackItems(items []list.Item, indexes []int) []list.Item {
