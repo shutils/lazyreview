@@ -173,3 +173,22 @@ func makeHash(item listItem) string {
 	seed := item.param + item.sourceName
 	return fmt.Sprintf("%x", seed)
 }
+
+func getSourceItems(sources []config.Source) []list.Item {
+	var items []list.Item
+
+	if len(sources) == 0 {
+		return []list.Item{}
+	}
+
+	for _, source := range sources {
+		items = append(items, sourceItem{
+			name:      source.Name,
+			collector: source.Collector,
+			previewer: source.Previewer,
+			enabled:   source.Enabled,
+		})
+	}
+
+	return items
+}

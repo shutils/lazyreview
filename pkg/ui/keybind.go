@@ -58,6 +58,10 @@ func GetContextKeymap() contextKeyMap {
 	return ContextKeyMap
 }
 
+func GetSourceListKeymap() sourceListKeyMap {
+	return SourceListKeyMap
+}
+
 var GlobalKeyMap = globalKeyMap{
 	Quit: key.NewBinding(
 		key.WithKeys("ctrl+c"),
@@ -407,77 +411,77 @@ var PromptKeyMap = promptKeyMap{
 }
 
 type configSummaryKeyMap struct {
-	FocusContextPanel key.Binding
-	FocusStatePanel   key.Binding
+	FocusStateSummaryPanel key.Binding
+	FocusSourceList        key.Binding
 }
 
 func (k configSummaryKeyMap) ShortHelp() []key.Binding {
 	return []key.Binding{
-		k.FocusContextPanel,
-		k.FocusStatePanel,
+		k.FocusStateSummaryPanel,
+		k.FocusSourceList,
 	}
 }
 
 func (k configSummaryKeyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{
 		{
-			k.FocusContextPanel,
-			k.FocusStatePanel,
+			k.FocusStateSummaryPanel,
+			k.FocusSourceList,
 		},
 	}
 }
 
 var ConfigSummaryKeyMap = configSummaryKeyMap{
-	FocusContextPanel: key.NewBinding(
+	FocusSourceList: key.NewBinding(
 		key.WithKeys("h"),
-		key.WithHelp("h", "focus context"),
+		key.WithHelp("h", "focus source list"),
 	),
-	FocusStatePanel: key.NewBinding(
+	FocusStateSummaryPanel: key.NewBinding(
 		key.WithKeys("l"),
 		key.WithHelp("l", "focus state"),
 	),
 }
 
 type stateKeyMap struct {
-	FocusContextPanel key.Binding
-	FocusConfigPanel  key.Binding
+	FocusListPanel          key.Binding
+	FocusConfigSummaryPanel key.Binding
 }
 
 func (k stateKeyMap) ShortHelp() []key.Binding {
 	return []key.Binding{
-		k.FocusContextPanel,
-		k.FocusConfigPanel,
+		k.FocusListPanel,
+		k.FocusConfigSummaryPanel,
 	}
 }
 
 func (k stateKeyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{
 		{
-			k.FocusContextPanel,
-			k.FocusConfigPanel,
+			k.FocusListPanel,
+			k.FocusConfigSummaryPanel,
 		},
 	}
 }
 
 var StateKeyMap = stateKeyMap{
-	FocusContextPanel: key.NewBinding(
+	FocusListPanel: key.NewBinding(
 		key.WithKeys("l"),
-		key.WithHelp("l", "focus context"),
+		key.WithHelp("l", "focus list"),
 	),
-	FocusConfigPanel: key.NewBinding(
+	FocusConfigSummaryPanel: key.NewBinding(
 		key.WithKeys("h"),
 		key.WithHelp("h", "focus config"),
 	),
 }
 
 type contextKeyMap struct {
-	FocusListPanel        key.Binding
+	FocusSourceListPanel  key.Binding
 	FocusReviewStackPanel key.Binding
 }
 
 func (k contextKeyMap) ShortHelp() []key.Binding {
 	return []key.Binding{
-		k.FocusListPanel,
+		k.FocusSourceListPanel,
 		k.FocusReviewStackPanel,
 	}
 }
@@ -485,20 +489,59 @@ func (k contextKeyMap) ShortHelp() []key.Binding {
 func (k contextKeyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{
 		{
-			k.FocusListPanel,
+			k.FocusSourceListPanel,
 			k.FocusReviewStackPanel,
 		},
 	}
 }
 
 var ContextKeyMap = contextKeyMap{
-	FocusListPanel: key.NewBinding(
-		key.WithKeys("h"),
-		key.WithHelp("h", "focus list"),
+	FocusSourceListPanel: key.NewBinding(
+		key.WithKeys("l"),
+		key.WithHelp("l", "focus source list"),
 	),
 	FocusReviewStackPanel: key.NewBinding(
+		key.WithKeys("h"),
+		key.WithHelp("h", "focus stack"),
+	),
+}
+
+type sourceListKeyMap struct {
+	FocusContextPanel   key.Binding
+	FocusConfigPanel    key.Binding
+	ToggleSourceEnabled key.Binding
+}
+
+func (k sourceListKeyMap) ShortHelp() []key.Binding {
+	return []key.Binding{
+		k.FocusContextPanel,
+		k.FocusConfigPanel,
+		k.ToggleSourceEnabled,
+	}
+}
+
+func (k sourceListKeyMap) FullHelp() [][]key.Binding {
+	return [][]key.Binding{
+		{
+			k.FocusContextPanel,
+			k.FocusConfigPanel,
+			k.ToggleSourceEnabled,
+		},
+	}
+}
+
+var SourceListKeyMap = sourceListKeyMap{
+	FocusContextPanel: key.NewBinding(
+		key.WithKeys("h"),
+		key.WithHelp("h", "focus context"),
+	),
+	FocusConfigPanel: key.NewBinding(
 		key.WithKeys("l"),
-		key.WithHelp("l", "focus stack"),
+		key.WithHelp("l", "focus config"),
+	),
+	ToggleSourceEnabled: key.NewBinding(
+		key.WithKeys(" "),
+		key.WithHelp("space", "toggle source enabled"),
 	),
 }
 
@@ -643,10 +686,25 @@ func (m *model) handleConfigSummaryKey(msg tea.Msg) func() (tea.Model, tea.Cmd) 
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch {
-		case key.Matches(msg, m.configSummaryKeyMap.FocusContextPanel):
-			return m.FocusContextPanel
-		case key.Matches(msg, m.configSummaryKeyMap.FocusStatePanel):
+		case key.Matches(msg, m.configSummaryKeyMap.FocusStateSummaryPanel):
 			return m.FocusStatePanel
+		case key.Matches(msg, m.configSummaryKeyMap.FocusSourceList):
+			return m.FocusSourceListPanel
+		}
+	}
+	return nil
+}
+
+func (m *model) handleSourceListKey(msg tea.Msg) func() (tea.Model, tea.Cmd) {
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		switch {
+		case key.Matches(msg, m.sourceListKeyMap.FocusConfigPanel):
+			return m.FocusConfigSummaryPanel
+		case key.Matches(msg, m.sourceListKeyMap.FocusContextPanel):
+			return m.FocusContextPanel
+		case key.Matches(msg, m.sourceListKeyMap.ToggleSourceEnabled):
+			return m.ToggleSourceEnabled
 		}
 	}
 	return nil
@@ -656,9 +714,9 @@ func (m *model) handleStateKey(msg tea.Msg) func() (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch {
-		case key.Matches(msg, m.stateKeyMap.FocusConfigPanel):
+		case key.Matches(msg, m.stateKeyMap.FocusConfigSummaryPanel):
 			return m.FocusConfigSummaryPanel
-		case key.Matches(msg, m.stateKeyMap.FocusContextPanel):
+		case key.Matches(msg, m.stateKeyMap.FocusListPanel):
 			return m.FocusListPanel
 		}
 	}
@@ -669,10 +727,10 @@ func (m *model) handleContextKey(msg tea.Msg) func() (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch {
-		case key.Matches(msg, m.contextKeyMap.FocusListPanel):
-			return m.FocusReviewStackPanel
 		case key.Matches(msg, m.contextKeyMap.FocusReviewStackPanel):
-			return m.FocusConfigSummaryPanel
+			return m.FocusReviewStackPanel
+		case key.Matches(msg, m.contextKeyMap.FocusSourceListPanel):
+			return m.FocusSourceListPanel
 		}
 	}
 	return nil
@@ -730,6 +788,12 @@ func (m *model) handleKey(msg tea.Msg) func() (tea.Model, tea.Cmd) {
 		}
 	case ContextPanelFocus:
 		if action := m.handleContextKey(msg); action != nil {
+			return func() (tea.Model, tea.Cmd) {
+				return action()
+			}
+		}
+	case SourceListPanelFocus:
+		if action := m.handleSourceListKey(msg); action != nil {
 			return func() (tea.Model, tea.Cmd) {
 				return action()
 			}

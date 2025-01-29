@@ -26,6 +26,11 @@ type Source struct {
 	Enabled   bool
 }
 
+func (s Source) String() string {
+	return fmt.Sprintf("Name: %s\nCollector: %s\nPreviewer: %s\nPrompt: %s\nEnabled: %t",
+		s.Name, s.Collector, s.Previewer, s.Prompt, s.Enabled)
+}
+
 const projectName = "lazyreview"
 
 // Config holds the configuration details for the application.
@@ -186,4 +191,27 @@ func saveConfig(filePath string, config Config) {
 	}
 
 	log.Printf("Config saved to %s", filePath)
+}
+
+func (c *Config) GetSources() []Source {
+	return c.Sources
+}
+
+func (c *Config) ToggleSourceEnabled(sourceName string) {
+	for i, source := range c.Sources {
+		if source.Name == sourceName {
+			c.Sources[i].Enabled = !source.Enabled
+			return
+		}
+	}
+}
+
+func (c *Config) GetSourceFromName(sourceName string) Source {
+	for _, source := range c.Sources {
+		if source.Name == sourceName {
+			return source
+		}
+	}
+	return Source{}
+
 }

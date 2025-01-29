@@ -30,9 +30,31 @@ type listItem struct {
 	aiContext                    bool
 }
 
+type sourceItem struct {
+	name, collector, previewer string
+	enabled                    bool
+}
+
 func (i listItem) Title() string       { return i.title }
 func (i listItem) Description() string { return i.param }
 func (i listItem) FilterValue() string { return i.title }
+
+func (i sourceItem) Title() string {
+	if i.enabled {
+		return "☑ " + i.name
+	}
+	return "☐ " + i.name
+}
+func (i sourceItem) Description() string {
+	if i.enabled {
+		return "☑ collector: " + i.collector + " previewer: " + i.previewer
+	}
+	return "☐ collector: " + i.collector + " previewer: " + i.previewer
+}
+func (i sourceItem) FilterValue() string { return i.name }
+
+type updateSourceListMsg struct {
+}
 
 type model struct {
 	list                list.Model
@@ -45,6 +67,8 @@ type model struct {
 	statePanel          viewport.Model
 	stateDetailPanel    viewport.Model
 	contextPanel        viewport.Model
+	sourceDetailPanel   viewport.Model
+	sourceListPanel     list.Model
 	panelSize           panelSize
 	winSize             winSize
 	reviewList          []reviewInfo
@@ -66,6 +90,7 @@ type model struct {
 	reviewStackKeyMap   reviewStackKeyMap
 	promptKeyMap        promptKeyMap
 	configSummaryKeyMap configSummaryKeyMap
+	sourceListKeyMap    sourceListKeyMap
 	stateKeyMap         stateKeyMap
 	contextKeyMap       contextKeyMap
 	uiState             state.State
@@ -86,15 +111,20 @@ func NewUi(conf config.Config, client openai.Client) model {
 	configContentPanel := viewport.New(0, 20)
 	configContentPanel.SetContent(strings.Join(conf.ToStringArray(), "\n"))
 	m := model{
-		list:                itemList,
-		contentPanel:        contentPanel,
-		reviewPanel:         reviewPanel,
-		instantPromptPanel:  instantPromptPanel,
-		configSummaryPanel:  configPanel,
-		configContentPanel:  configContentPanel,
-		statePanel:          viewport.New(0, 0),
-		stateDetailPanel:    viewport.New(0, 0),
-		contextPanel:        viewport.New(0, 0),
+		list:               itemList,
+		contentPanel:       contentPanel,
+		reviewPanel:        reviewPanel,
+		instantPromptPanel: instantPromptPanel,
+		configSummaryPanel: configPanel,
+		configContentPanel: configContentPanel,
+		statePanel:         viewport.New(0, 0),
+		stateDetailPanel:   viewport.New(0, 0),
+		contextPanel:       viewport.New(0, 0),
+		sourceListPanel: list.New([]list.Item{}, list.DefaultDelegate{
+			ShowDescription: false,
+			Styles:          list.NewDefaultItemStyles(),
+		}, 0, 0),
+		sourceDetailPanel:   viewport.New(0, 0),
 		reviewList:          []reviewInfo{},
 		targetDir:           conf.Target,
 		outputFile:          conf.Output,
@@ -115,14 +145,21 @@ func NewUi(conf config.Config, client openai.Client) model {
 		configSummaryKeyMap: GetConfigSummaryKeymap(),
 		stateKeyMap:         GetStateKeymap(),
 		contextKeyMap:       GetContextKeymap(),
+		sourceListKeyMap:    GetSourceListKeymap(),
 		uiState:             state.LoadState(conf.State),
 		currentHistoryIndex: 0,
 		state:               state.State{},
 	}
+	m.sourceListPanel.SetShowTitle(false)
+	m.sourceListPanel.SetShowHelp(false)
+	m.sourceListPanel.SetShowStatusBar(false)
+	m.sourceListPanel.SetShowFilter(false)
+	m.sourceListPanel.KeyMap.Filter.Unbind()
 	m.UpdateState()
 	m.currentHistoryIndex = len(m.uiState.PromptHistory)
 	m.loadReviews()
 	m.list.SetItems(getItems(m.conf, m.reviewList))
+	m.sourceListPanel.SetItems(getSourceItems(m.conf.Sources))
 	m.onChangeListSelectedItem()
 	return m
 }
@@ -200,13 +237,28 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		m.updateContextPanel()
 		return m, nil
+	case updateSourceListMsg:
+		m.sourceListPanel.SetItems(getSourceItems(m.conf.Sources))
+		m.contextPanel.Update(msg)
+		m.list.SetItems(getItems(m.conf, m.reviewList))
 	default:
+		switch m.focusState {
+		case SourceListPanelFocus:
+			selectedSourceName := m.sourceListPanel.SelectedItem().(sourceItem)
+			selectedSource := m.conf.GetSourceFromName(selectedSourceName.name)
+			m.sourceDetailPanel.SetContent(selectedSource.String())
+		}
 		m.spinner, cmd = m.spinner.Update(msg)
 		cmds = append(cmds, cmd)
 	}
 
 	if m.focusState == ListPanelFocus {
 		m.list, cmd = m.list.Update(msg)
+		cmds = append(cmds, cmd)
+	}
+
+	if m.focusState == SourceListPanelFocus {
+		m.sourceListPanel, cmd = m.sourceListPanel.Update(msg)
 		cmds = append(cmds, cmd)
 	}
 
