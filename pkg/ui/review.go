@@ -88,7 +88,7 @@ func (m *model) getReviewIndex(id string) int {
 func (m *model) reviewContent() tea.Cmd {
 	return func() tea.Msg {
 		selectedItem, ok := m.list.SelectedItem().(listItem)
-		contextItems := getContextItems(m.list.Items())
+		contextItems := m.contextPanel.Items()
 
 		var (
 			chat   *openai.ChatCompletion

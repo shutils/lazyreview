@@ -140,7 +140,7 @@ func (m *model) makeView() string {
 	statePanel := m.buildPanel(m.statePanel.View(), m.getPanelStyle(StatePanelFocus), m.statePanel.Width, m.statePanel.Height, "State")
 	stateDetailPanel := m.buildPanel(m.stateDetailPanel.View(), m.getPanelStyle(Other), m.stateDetailPanel.Width, m.stateDetailPanel.Height, "State detail")
 	instantPromptPanel := m.buildPanel(m.instantPromptPanel.View(), m.getPanelStyle(InstantPromptPanelFocus), m.panelSize.secondlyPanelWidth, instantPromptPanelHeight, "Instant prompt")
-	contextPanel := m.buildPanel(m.contextPanel.View(), m.getPanelStyle(ContextPanelFocus), m.contextPanel.Width, m.contextPanel.Height, "Context")
+	contextPanel := m.buildPanel(m.contextPanel.View(), m.getPanelStyle(ContextPanelFocus), m.contextPanel.Width(), m.contextPanel.Height(), "Context")
 	sourceListPanel := m.buildPanel(m.sourceListPanel.View(), m.getPanelStyle(SourceListPanelFocus), m.sourceListPanel.Width(), m.sourceListPanel.Height(), "Source list")
 	sourceDetailPanel := m.buildPanel(m.sourceDetailPanel.View(), m.getPanelStyle(Other), m.sourceDetailPanel.Width, m.sourceDetailPanel.Height, "Source detail")
 
@@ -267,8 +267,7 @@ func (m *model) setPrimaryPanelSizes() {
 	m.reviewStackPanel.Height = reviewStackPanelHeight
 	m.statePanel.Width = primaryAreaWidth - borderWidth*2
 	m.statePanel.Height = stateSummaryPanelHeight
-	m.contextPanel.Width = primaryAreaWidth - borderWidth*2
-	m.contextPanel.Height = contextPanelHeight
+	m.contextPanel.SetSize(primaryAreaWidth-borderWidth*2, contextPanelHeight)
 	m.sourceListPanel.SetSize(primaryAreaWidth-borderWidth*2, sourceListPanelHeight)
 }
 

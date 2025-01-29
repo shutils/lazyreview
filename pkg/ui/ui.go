@@ -27,7 +27,6 @@ type winSize struct {
 
 type listItem struct {
 	title, param, sourceName, id string
-	aiContext                    bool
 }
 
 type sourceItem struct {
@@ -66,7 +65,7 @@ type model struct {
 	configContentPanel  viewport.Model
 	statePanel          viewport.Model
 	stateDetailPanel    viewport.Model
-	contextPanel        viewport.Model
+	contextPanel        list.Model
 	sourceDetailPanel   viewport.Model
 	sourceListPanel     list.Model
 	panelSize           panelSize
@@ -119,7 +118,10 @@ func NewUi(conf config.Config, client openai.Client) model {
 		configContentPanel: configContentPanel,
 		statePanel:         viewport.New(0, 0),
 		stateDetailPanel:   viewport.New(0, 0),
-		contextPanel:       viewport.New(0, 0),
+		contextPanel: list.New([]list.Item{}, list.DefaultDelegate{
+			ShowDescription: false,
+			Styles:          list.NewDefaultItemStyles(),
+		}, 0, 0),
 		sourceListPanel: list.New([]list.Item{}, list.DefaultDelegate{
 			ShowDescription: false,
 			Styles:          list.NewDefaultItemStyles(),
@@ -155,6 +157,13 @@ func NewUi(conf config.Config, client openai.Client) model {
 	m.sourceListPanel.SetShowStatusBar(false)
 	m.sourceListPanel.SetShowFilter(false)
 	m.sourceListPanel.KeyMap.Filter.Unbind()
+
+	m.contextPanel.SetShowTitle(false)
+	m.contextPanel.SetShowHelp(false)
+	m.contextPanel.SetShowStatusBar(false)
+	m.contextPanel.SetShowFilter(false)
+	m.contextPanel.KeyMap.Filter.Unbind()
+
 	m.UpdateState()
 	m.currentHistoryIndex = len(m.uiState.PromptHistory)
 	m.loadReviews()
@@ -225,18 +234,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		m.updateReviewStackPanel()
 		return m, nil
-	case aiContextMsg:
-		index := findIndex(m.list.Items(), msg.id)
-		if index == -1 {
-			return m, nil
-		}
-		if msg.method == AddContext {
-			m.addContextStack(index)
-		} else {
-			m.removeContextStack(index)
-		}
-		m.updateContextPanel()
-		return m, nil
 	case updateSourceListMsg:
 		m.sourceListPanel.SetItems(getSourceItems(m.conf.Sources))
 		m.contextPanel.Update(msg)
@@ -259,6 +256,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	if m.focusState == SourceListPanelFocus {
 		m.sourceListPanel, cmd = m.sourceListPanel.Update(msg)
+		cmds = append(cmds, cmd)
+	}
+
+	if m.focusState == ContextPanelFocus {
+		m.contextPanel, cmd = m.contextPanel.Update(msg)
 		cmds = append(cmds, cmd)
 	}
 
@@ -308,21 +310,36 @@ func (m *model) updateReviewStackPanel() {
 	m.reviewStackPanel.SetContent(itemTitleList)
 }
 
-func (m *model) updateContextPanel() {
-	itemTitleList := getItemListString(getContextItems(m.list.Items()))
-	m.contextPanel.SetContent(itemTitleList)
+func (m *model) addContextStack(id string) (tea.Model, tea.Cmd) {
+	index := findIndex(m.list.Items(), id)
+	if index == -1 {
+		return *m, nil
+	}
+	item := m.list.Items()[index]
+
+	contextList := m.contextPanel.Items()
+	contextList = append(contextList, item)
+	m.contextPanel.SetItems(contextList)
+	return *m, nil
 }
 
-func (m *model) addContextStack(index int) {
-	item := m.list.Items()[index].(listItem)
-	item.aiContext = true
-	m.list.SetItem(index, item)
-}
+func (m *model) removeContextStack(id string) (tea.Model, tea.Cmd) {
+	index := findIndex(m.contextPanel.Items(), id)
+	contextList := m.contextPanel.Items()
 
-func (m *model) removeContextStack(index int) {
-	item := m.list.Items()[index].(listItem)
-	item.aiContext = false
-	m.list.SetItem(index, item)
+	if index < 0 || index >= len(contextList) {
+		return *m, nil
+	}
+
+	var newContextList []list.Item
+	if index == len(contextList)-1 {
+		newContextList = contextList[:index]
+	} else {
+		newContextList = append(contextList[:index], contextList[index+1:]...)
+	}
+
+	m.contextPanel.SetItems(newContextList)
+	return *m, nil
 }
 
 func (m *model) changeItemTitlePrefix(index int, prefix string) {

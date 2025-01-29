@@ -477,12 +477,14 @@ var StateKeyMap = stateKeyMap{
 type contextKeyMap struct {
 	FocusSourceListPanel  key.Binding
 	FocusReviewStackPanel key.Binding
+	RemoveContext         key.Binding
 }
 
 func (k contextKeyMap) ShortHelp() []key.Binding {
 	return []key.Binding{
 		k.FocusSourceListPanel,
 		k.FocusReviewStackPanel,
+		k.RemoveContext,
 	}
 }
 
@@ -491,6 +493,7 @@ func (k contextKeyMap) FullHelp() [][]key.Binding {
 		{
 			k.FocusSourceListPanel,
 			k.FocusReviewStackPanel,
+			k.RemoveContext,
 		},
 	}
 }
@@ -503,6 +506,10 @@ var ContextKeyMap = contextKeyMap{
 	FocusReviewStackPanel: key.NewBinding(
 		key.WithKeys("h"),
 		key.WithHelp("h", "focus stack"),
+	),
+	RemoveContext: key.NewBinding(
+		key.WithKeys("d"),
+		key.WithHelp("d", "remove context"),
 	),
 }
 
@@ -731,6 +738,17 @@ func (m *model) handleContextKey(msg tea.Msg) func() (tea.Model, tea.Cmd) {
 			return m.FocusReviewStackPanel
 		case key.Matches(msg, m.contextKeyMap.FocusSourceListPanel):
 			return m.FocusSourceListPanel
+		case key.Matches(msg, m.contextKeyMap.RemoveContext):
+			currItem := m.contextPanel.SelectedItem()
+			currListItem, ok := currItem.(listItem)
+			if !ok {
+				return func() (tea.Model, tea.Cmd) {
+					return m, nil
+				}
+			}
+			return func() (tea.Model, tea.Cmd) {
+				return m.removeContextStack(currListItem.id)
+			}
 		}
 	}
 	return nil

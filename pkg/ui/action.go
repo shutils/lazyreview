@@ -47,19 +47,12 @@ func (m *model) ReviewStack() (tea.Model, tea.Cmd) {
 
 func (m *model) ToggleAiContext() (tea.Model, tea.Cmd) {
 	item := m.list.SelectedItem().(listItem)
-	var method AiContextMethod
-	if item.aiContext {
-		method = RemoveContext
+	index := findIndex(m.contextPanel.Items(), item.id)
+	if index == -1 {
+		return m.addContextStack(item.id)
 	} else {
-		method = AddContext
+		return m.removeContextStack(item.id)
 	}
-	cmd := func() tea.Msg {
-		return aiContextMsg{
-			method: method,
-			id:     item.id,
-		}
-	}
-	return m, cmd
 }
 
 func (m *model) ReloadItems() (tea.Model, tea.Cmd) {
