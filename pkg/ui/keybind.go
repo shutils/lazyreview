@@ -478,6 +478,8 @@ type contextKeyMap struct {
 	FocusSourceListPanel  key.Binding
 	FocusReviewStackPanel key.Binding
 	RemoveContext         key.Binding
+	CursorDown            key.Binding
+	CursorUp              key.Binding
 }
 
 func (k contextKeyMap) ShortHelp() []key.Binding {
@@ -485,15 +487,18 @@ func (k contextKeyMap) ShortHelp() []key.Binding {
 		k.FocusSourceListPanel,
 		k.FocusReviewStackPanel,
 		k.RemoveContext,
+		k.CursorDown,
+		k.CursorUp,
 	}
 }
-
 func (k contextKeyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{
 		{
 			k.FocusSourceListPanel,
 			k.FocusReviewStackPanel,
 			k.RemoveContext,
+			k.CursorDown,
+			k.CursorUp,
 		},
 	}
 }
@@ -510,6 +515,14 @@ var ContextKeyMap = contextKeyMap{
 	RemoveContext: key.NewBinding(
 		key.WithKeys("d"),
 		key.WithHelp("d", "remove context"),
+	),
+	CursorDown: key.NewBinding(
+		key.WithKeys("J"),
+		key.WithHelp("shift+j", "down"),
+	),
+	CursorUp: key.NewBinding(
+		key.WithKeys("K"),
+		key.WithHelp("shift+k", "down"),
 	),
 }
 
@@ -749,6 +762,10 @@ func (m *model) handleContextKey(msg tea.Msg) func() (tea.Model, tea.Cmd) {
 			return func() (tea.Model, tea.Cmd) {
 				return m.removeContextStack(currListItem.id)
 			}
+		case key.Matches(msg, m.contextKeyMap.CursorDown):
+			return m.ContextDetailCursorDown
+		case key.Matches(msg, m.contextKeyMap.CursorUp):
+			return m.ContextDetailCursorUp
 		}
 	}
 	return nil

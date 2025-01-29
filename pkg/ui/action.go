@@ -102,6 +102,16 @@ func (m *model) ReviewContentHalfViewUp() (tea.Model, tea.Cmd) {
 	return *m, nil
 }
 
+func (m *model) ContextDetailCursorDown() (tea.Model, tea.Cmd) {
+	m.contextDetailPanel.LineDown(1)
+	return *m, nil
+}
+
+func (m *model) ContextDetailCursorUp() (tea.Model, tea.Cmd) {
+	m.contextDetailPanel.LineUp(1)
+	return *m, nil
+}
+
 func (m *model) FocusInstantPrompt() (tea.Model, tea.Cmd) {
 	m.focusState = InstantPromptPanelFocus
 	m.instantPromptPanel.Focus()
