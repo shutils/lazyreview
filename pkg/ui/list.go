@@ -126,7 +126,6 @@ func isDisabledAllSource(sources []config.Source) bool {
 	return true
 }
 
-// itemsにsourceの名前を付与する
 func collectItemsFromSources(sources []config.Source) []list.Item {
 	var items []list.Item
 
@@ -136,7 +135,9 @@ func collectItemsFromSources(sources []config.Source) []list.Item {
 				continue
 			}
 			collectedItems := customCollector(source.Collector, source.Name)
-			items = append(items, collectedItems...)
+			if len(collectedItems) != 0 {
+				items = append(items, collectedItems...)
+			}
 		}
 	}
 
