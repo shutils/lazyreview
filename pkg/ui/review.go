@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/openai/openai-go"
@@ -88,7 +89,6 @@ func (m *model) getReviewIndex(id string) int {
 func (m *model) reviewContent() tea.Cmd {
 	return func() tea.Msg {
 		selectedItem, ok := m.list.SelectedItem().(listItem)
-		contextItems := m.contextPanel.Items()
 
 		var (
 			chat   *openai.ChatCompletion
@@ -96,21 +96,10 @@ func (m *model) reviewContent() tea.Cmd {
 			err    error
 		)
 		if ok {
+			context := m.getContextString()
 			// Generate content by including contextItems
-			content := ""
-			content = previewContent(selectedItem, m.conf.Sources)
-
-			// Append contextItems with param as the first line, followed by content
-			for _, item := range contextItems {
-				var contextContent string
-				item, ok := item.(listItem)
-				if !ok {
-					continue
-				}
-				contextContent = item.param + "\n" + previewContent(item, m.conf.Sources)
-				content = contextContent + "\n\n" + content
-			}
-			review = content
+			content := previewContent(selectedItem, m.conf.Sources)
+			content = context + content
 			if m.instantPrompt == "" {
 				chat, err = m.client.Getreviewfromchatgpt(content, m.conf)
 			} else {
@@ -140,4 +129,19 @@ func (m *model) reviewContent() tea.Cmd {
 		}
 
 	}
+}
+
+func (m *model) getContextString() string {
+	items := m.contextPanel.Items()
+	if len(items) == 0 {
+		return ""
+	}
+	var contextItems []string
+	for _, item := range items {
+		item, ok := item.(listItem)
+		if ok {
+			contextItems = append(contextItems, item.param+"\n"+previewContent(item, m.conf.Sources))
+		}
+	}
+	return strings.Join(contextItems, "\n\n")
 }

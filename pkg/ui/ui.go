@@ -66,6 +66,7 @@ type model struct {
 	statePanel          viewport.Model
 	stateDetailPanel    viewport.Model
 	contextPanel        list.Model
+	contextDetailPanel  viewport.Model
 	sourceDetailPanel   viewport.Model
 	sourceListPanel     list.Model
 	panelSize           panelSize
@@ -122,6 +123,7 @@ func NewUi(conf config.Config, client openai.Client) model {
 			ShowDescription: false,
 			Styles:          list.NewDefaultItemStyles(),
 		}, 0, 0),
+		contextDetailPanel: viewport.New(0, 0),
 		sourceListPanel: list.New([]list.Item{}, list.DefaultDelegate{
 			ShowDescription: false,
 			Styles:          list.NewDefaultItemStyles(),
@@ -244,6 +246,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			selectedSourceName := m.sourceListPanel.SelectedItem().(sourceItem)
 			selectedSource := m.conf.GetSourceFromName(selectedSourceName.name)
 			m.sourceDetailPanel.SetContent(selectedSource.String())
+		case ContextPanelFocus:
+			m.contextDetailPanel.SetContent(m.getContextString())
 		}
 		m.spinner, cmd = m.spinner.Update(msg)
 		cmds = append(cmds, cmd)

@@ -143,6 +143,7 @@ func (m *model) makeView() string {
 	contextPanel := m.buildPanel(m.contextPanel.View(), m.getPanelStyle(ContextPanelFocus), m.contextPanel.Width(), m.contextPanel.Height(), "Context")
 	sourceListPanel := m.buildPanel(m.sourceListPanel.View(), m.getPanelStyle(SourceListPanelFocus), m.sourceListPanel.Width(), m.sourceListPanel.Height(), "Source list")
 	sourceDetailPanel := m.buildPanel(m.sourceDetailPanel.View(), m.getPanelStyle(Other), m.sourceDetailPanel.Width, m.sourceDetailPanel.Height, "Source detail")
+	contextDetailPanel := m.buildPanel(m.contextDetailPanel.View(), m.getPanelStyle(Other), m.contextDetailPanel.Width, m.contextDetailPanel.Height, "Context detail")
 
 	primaryPanels := m.buildPrimaryPanels(statePanel, listPanel, reviewStackPanel, contextPanel, sourceListPanel, configPanel)
 	reviewCombiPanels := m.buildReviewCombiPanels(contentPanel, reviewPanel, instantPromptPanel)
@@ -150,7 +151,7 @@ func (m *model) makeView() string {
 	reviewPanels := m.buildReviewPanels(reviewPanel, instantPromptPanel)
 
 	bottomLine := lipgloss.JoinHorizontal(lipgloss.Left, state, " ", helpString)
-	return m.buildWindowBasedOnFocus(primaryPanels, configContentPanel, stateDetailPanel, reviewCombiPanels, contentPanels, reviewPanels, sourceDetailPanel, bottomLine)
+	return m.buildWindowBasedOnFocus(primaryPanels, configContentPanel, stateDetailPanel, reviewCombiPanels, contentPanels, reviewPanels, sourceDetailPanel, contextDetailPanel, bottomLine)
 }
 
 func (m *model) getHelpString(helpModel help.Model, globalHelp string) string {
@@ -186,13 +187,13 @@ func (m *model) getPanelStyle(focus FocusState) lipgloss.Style {
 	return style
 }
 
-func (m *model) buildWindowBasedOnFocus(primaryPanels, configContentPanel, stateDetailPanel, reviewCombiPanels, contentPanels, reviewPanels, sourceDetailPanel, bottomLine string) string {
+func (m *model) buildWindowBasedOnFocus(primaryPanels, configContentPanel, stateDetailPanel, reviewCombiPanels, contentPanels, reviewPanels, sourceDetailPanel, contextDetailPanel, bottomLine string) string {
 	switch m.focusState {
 	case ConfigSummaryPanelFocus:
 		return m.buildWindow(primaryPanels, configContentPanel, bottomLine)
 	case StatePanelFocus:
 		return m.buildWindow(primaryPanels, stateDetailPanel, bottomLine)
-	case ListPanelFocus, ReviewStackPanelFocus, ContextPanelFocus:
+	case ListPanelFocus, ReviewStackPanelFocus:
 		return m.buildWindow(primaryPanels, reviewCombiPanels, bottomLine)
 	case ContentPanelFocus:
 		return m.buildWindowBasedOnZoom(primaryPanels, reviewCombiPanels, contentPanels, bottomLine)
@@ -200,6 +201,8 @@ func (m *model) buildWindowBasedOnFocus(primaryPanels, configContentPanel, state
 		return m.buildWindowBasedOnZoom(primaryPanels, reviewCombiPanels, reviewPanels, bottomLine)
 	case SourceListPanelFocus:
 		return m.buildWindow(primaryPanels, sourceDetailPanel, bottomLine)
+	case ContextPanelFocus:
+		return m.buildWindow(primaryPanels, contextDetailPanel, bottomLine)
 	default:
 		return ""
 	}
@@ -306,6 +309,9 @@ func (m *model) setSecondaryPanelSizes() {
 
 	m.sourceDetailPanel.Width = secondlyAreaWidth - borderWidth*2
 	m.sourceDetailPanel.Height = m.winSize.height - borderHeight*2 - footerHeight
+
+	m.contextDetailPanel.Width = secondlyAreaWidth - borderWidth*2
+	m.contextDetailPanel.Height = m.winSize.height - borderHeight*2 - footerHeight
 }
 
 func (m *model) buildPrimaryPanels(statePanel, listPanel, reviewStackPanel, contextPanel, sourceListPanel, configPanel string) string {
