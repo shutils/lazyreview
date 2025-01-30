@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"math"
 	"regexp"
 	"strings"
 
@@ -106,10 +107,12 @@ const (
 	stateSummaryPanelHeight   = 1
 	configSummaryPanelHeight  = 1
 	reviewProgressPanelHeight = 1
-	contextPanelHeight        = 5
+	contextListPanelMaxHeight = 5
 	instantPromptPanelHeight  = 5
-	sourceListPanelHeight     = 6
+	sourceListPanelMaxHeight  = 5
 	footerHeight              = 1
+
+	listPaginationHeight = 2
 
 	borderHeight = 1
 	borderWidth  = 1
@@ -221,7 +224,18 @@ func (m *model) makeView() string {
 	reviewPanels := m.buildReviewPanels(reviewPanel, instantPromptPanel)
 
 	bottomLine := lipgloss.JoinHorizontal(lipgloss.Left, state, " ", helpString)
-	return m.buildWindowBasedOnFocus(primaryPanels, configContentPanel, stateDetailPanel, reviewCombiPanels, contentPanels, reviewPanels, sourceDetailPanel, contextDetailPanel, reviewStackPanel, bottomLine)
+	return m.buildWindowBasedOnFocus(
+		primaryPanels,
+		configContentPanel,
+		stateDetailPanel,
+		reviewCombiPanels,
+		contentPanels,
+		reviewPanels,
+		sourceDetailPanel,
+		contextDetailPanel,
+		reviewStackPanel,
+		bottomLine,
+	)
 }
 
 func (m *model) getHelpString(helpModel help.Model, globalHelp string) string {
@@ -257,7 +271,17 @@ func (m *model) getPanelStyle(focus FocusState) lipgloss.Style {
 	return style
 }
 
-func (m *model) buildWindowBasedOnFocus(primaryPanels, configContentPanel, stateDetailPanel, reviewCombiPanels, contentPanels, reviewPanels, sourceDetailPanel, contextDetailPanel, reviewStackPanel, bottomLine string) string {
+func (m *model) buildWindowBasedOnFocus(primaryPanels,
+	configContentPanel,
+	stateDetailPanel,
+	reviewCombiPanels,
+	contentPanels,
+	reviewPanels,
+	sourceDetailPanel,
+	contextDetailPanel,
+	reviewStackPanel,
+	bottomLine string,
+) string {
 	switch m.focusState {
 	case ConfigSummaryPanelFocus:
 		return m.buildWindow(primaryPanels, configContentPanel, bottomLine)
@@ -328,11 +352,25 @@ func (m *model) setPrimaryPanelSizes() {
 	const (
 		stateSummaryPanelOuterHeight  = stateSummaryPanelHeight + borderHeight*2
 		reviewProgresPanelOuterHeight = reviewProgressPanelHeight + borderHeight*2
-		contextPanelOuterHeight       = contextPanelHeight + borderHeight*2
 		configSummaryPanelOuterHeight = configSummaryPanelHeight + borderHeight*2
 	)
+	contextListPanelHeight := m.getListPanelHeight(m.panels.contextListPanel.Items(), contextListPanelMaxHeight)
+	contextListPanelOuterHeight := contextListPanelHeight + listPaginationHeight
+	if len(m.panels.contextListPanel.Items()) > contextListPanelMaxHeight {
+		m.panels.contextListPanel.SetShowPagination(true)
+	} else {
+		m.panels.contextListPanel.SetShowPagination(false)
+	}
 
-	listPanelHeight := m.winSize.height - stateSummaryPanelOuterHeight - reviewProgresPanelOuterHeight - contextPanelOuterHeight - configSummaryPanelOuterHeight - footerHeight - borderHeight*2 - sourceListPanelHeight - borderHeight*2
+	sourceListPanelHeight := m.getListPanelHeight(m.panels.sourceListPanel.Items(), sourceListPanelMaxHeight)
+	sourceListPanelOuterHeight := sourceListPanelHeight + listPaginationHeight
+	if len(m.panels.sourceListPanel.Items()) > sourceListPanelMaxHeight {
+		m.panels.sourceListPanel.SetShowPagination(true)
+	} else {
+		m.panels.sourceListPanel.SetShowPagination(false)
+	}
+
+	listPanelHeight := m.winSize.height - stateSummaryPanelOuterHeight - reviewProgresPanelOuterHeight - contextListPanelOuterHeight - configSummaryPanelOuterHeight - footerHeight - listPaginationHeight - sourceListPanelOuterHeight
 	primaryAreaWidth, _ := m.calcAreaSize()
 
 	m.panels.itemListPanel.SetSize(primaryAreaWidth-borderWidth*2, listPanelHeight)
@@ -341,7 +379,7 @@ func (m *model) setPrimaryPanelSizes() {
 	m.panels.reviewProgressPanel.Width = primaryAreaWidth - borderWidth*2
 	m.panels.stateSummaryPanel.Width = primaryAreaWidth - borderWidth*2
 	m.panels.stateSummaryPanel.Height = stateSummaryPanelHeight
-	m.panels.contextListPanel.SetSize(primaryAreaWidth-borderWidth*2, contextPanelHeight)
+	m.panels.contextListPanel.SetSize(primaryAreaWidth-borderWidth*2, contextListPanelHeight)
 	m.panels.sourceListPanel.SetSize(primaryAreaWidth-borderWidth*2, sourceListPanelHeight)
 }
 
@@ -389,7 +427,7 @@ func (m *model) setSecondaryPanelSizes() {
 }
 
 func (m *model) buildPrimaryPanels(statePanel, listPanel, reviewStackPanel, contextPanel, sourceListPanel, configPanel string) string {
-	return lipgloss.JoinVertical(lipgloss.Top, statePanel, listPanel, reviewStackPanel, contextPanel, sourceListPanel, configPanel)
+	return lipgloss.JoinVertical(lipgloss.Top, statePanel, listPanel, contextPanel, sourceListPanel, configPanel, reviewStackPanel)
 }
 
 func (m *model) buildReviewCombiPanels(contentPanel, reviewPanel, instantPromptPanel string) string {
@@ -414,6 +452,10 @@ func (m *model) buildWindow(primary, secondly, bottom string) string {
 
 func (m *model) buildWindowZoom(panels, bottom string) string {
 	return lipgloss.JoinVertical(lipgloss.Top, lipgloss.JoinHorizontal(lipgloss.Top, panels), bottom)
+}
+
+func (m *model) getListPanelHeight(items []list.Item, max int) int {
+	return int(math.Max(math.Min(float64(len(items)), float64(max)), 1))
 }
 
 func getRendered(text string, style string, width int) string {
