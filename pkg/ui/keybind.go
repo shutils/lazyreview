@@ -797,7 +797,7 @@ func (m *model) handleKey(msg tea.Msg) func() (tea.Model, tea.Cmd) {
 				return action()
 			}
 		}
-	case ReviewStackPanelFocus:
+	case ReviewStackProgressPanelFocus:
 		if action := m.handleReviewStackKey(msg); action != nil {
 			return func() (tea.Model, tea.Cmd) {
 				return action()

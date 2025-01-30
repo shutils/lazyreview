@@ -24,7 +24,7 @@ const (
 	ListPanelFocus FocusState = iota
 	ContentPanelFocus
 	ReviewPanelFocus
-	ReviewStackPanelFocus
+	ReviewStackProgressPanelFocus
 	InstantPromptPanelFocus
 	ConfigSummaryPanelFocus
 	StatePanelFocus
@@ -34,13 +34,13 @@ const (
 )
 
 const (
-	stateSummaryPanelHeight  = 1
-	configSummaryPanelHeight = 1
-	reviewStackPanelHeight   = 5
-	contextPanelHeight       = 5
-	instantPromptPanelHeight = 5
-	sourceListPanelHeight    = 6
-	footerHeight             = 1
+	stateSummaryPanelHeight   = 1
+	configSummaryPanelHeight  = 1
+	reviewProgressPanelHeight = 1
+	contextPanelHeight        = 5
+	instantPromptPanelHeight  = 5
+	sourceListPanelHeight     = 6
+	footerHeight              = 1
 
 	borderHeight = 1
 	borderWidth  = 1
@@ -134,7 +134,7 @@ func (m *model) makeView() string {
 	listPanel := m.buildPanel(m.list.View(), m.getPanelStyle(ListPanelFocus), m.list.Width(), m.list.Height(), "List")
 	contentPanel := m.buildPanel(m.contentPanel.View(), m.getPanelStyle(ContentPanelFocus), m.contentPanel.Width, m.contentPanel.Height, "Content")
 	reviewPanel := m.buildPanel(m.reviewPanel.View(), m.getPanelStyle(ReviewPanelFocus), m.reviewPanel.Width, m.reviewPanel.Height, "Review")
-	reviewStackPanel := m.buildPanel(m.reviewStackPanel.View(), m.getPanelStyle(ReviewStackPanelFocus), m.reviewStackPanel.Width, m.reviewStackPanel.Height, "Review stack")
+	reviewStackPanel := m.buildPanel(m.reviewStackPanel.View(), m.getPanelStyle(Other), m.reviewStackPanel.Width, m.reviewStackPanel.Height, "Review stack")
 	configPanel := m.buildPanel(m.configSummaryPanel.View(), m.getPanelStyle(ConfigSummaryPanelFocus), m.configSummaryPanel.Width, m.configSummaryPanel.Height, "Config")
 	configContentPanel := m.buildPanel(m.configContentPanel.View(), m.getPanelStyle(Other), m.configContentPanel.Width, m.configContentPanel.Height, "Config content")
 	statePanel := m.buildPanel(m.statePanel.View(), m.getPanelStyle(StatePanelFocus), m.statePanel.Width, m.statePanel.Height, "State")
@@ -144,14 +144,15 @@ func (m *model) makeView() string {
 	sourceListPanel := m.buildPanel(m.sourceListPanel.View(), m.getPanelStyle(SourceListPanelFocus), m.sourceListPanel.Width(), m.sourceListPanel.Height(), "Source list")
 	sourceDetailPanel := m.buildPanel(m.sourceDetailPanel.View(), m.getPanelStyle(Other), m.sourceDetailPanel.Width, m.sourceDetailPanel.Height, "Source detail")
 	contextDetailPanel := m.buildPanel(m.contextDetailPanel.View(), m.getPanelStyle(Other), m.contextDetailPanel.Width, m.contextDetailPanel.Height, "Context detail")
+	reviewProgressPanel := m.buildPanel(m.reviewProgressPanel.View(), m.getPanelStyle(ReviewStackProgressPanelFocus), m.reviewProgressPanel.Width, 1, "Review progress")
 
-	primaryPanels := m.buildPrimaryPanels(statePanel, listPanel, reviewStackPanel, contextPanel, sourceListPanel, configPanel)
+	primaryPanels := m.buildPrimaryPanels(statePanel, listPanel, reviewProgressPanel, contextPanel, sourceListPanel, configPanel)
 	reviewCombiPanels := m.buildReviewCombiPanels(contentPanel, reviewPanel, instantPromptPanel)
 	contentPanels := m.buildContentPanels(contentPanel, instantPromptPanel)
 	reviewPanels := m.buildReviewPanels(reviewPanel, instantPromptPanel)
 
 	bottomLine := lipgloss.JoinHorizontal(lipgloss.Left, state, " ", helpString)
-	return m.buildWindowBasedOnFocus(primaryPanels, configContentPanel, stateDetailPanel, reviewCombiPanels, contentPanels, reviewPanels, sourceDetailPanel, contextDetailPanel, bottomLine)
+	return m.buildWindowBasedOnFocus(primaryPanels, configContentPanel, stateDetailPanel, reviewCombiPanels, contentPanels, reviewPanels, sourceDetailPanel, contextDetailPanel, reviewStackPanel, bottomLine)
 }
 
 func (m *model) getHelpString(helpModel help.Model, globalHelp string) string {
@@ -162,7 +163,7 @@ func (m *model) getHelpString(helpModel help.Model, globalHelp string) string {
 		return MakeBottomLine(globalHelp, helpModel.View(m.contentKeyMap))
 	case ReviewPanelFocus:
 		return MakeBottomLine(globalHelp, helpModel.View(m.reviewKeyMap))
-	case ReviewStackPanelFocus:
+	case ReviewStackProgressPanelFocus:
 		return MakeBottomLine(globalHelp, helpModel.View(m.reviewStackKeyMap))
 	case InstantPromptPanelFocus:
 		return MakeBottomLine(globalHelp, helpModel.View(m.promptKeyMap))
@@ -187,13 +188,13 @@ func (m *model) getPanelStyle(focus FocusState) lipgloss.Style {
 	return style
 }
 
-func (m *model) buildWindowBasedOnFocus(primaryPanels, configContentPanel, stateDetailPanel, reviewCombiPanels, contentPanels, reviewPanels, sourceDetailPanel, contextDetailPanel, bottomLine string) string {
+func (m *model) buildWindowBasedOnFocus(primaryPanels, configContentPanel, stateDetailPanel, reviewCombiPanels, contentPanels, reviewPanels, sourceDetailPanel, contextDetailPanel, reviewStackPanel, bottomLine string) string {
 	switch m.focusState {
 	case ConfigSummaryPanelFocus:
 		return m.buildWindow(primaryPanels, configContentPanel, bottomLine)
 	case StatePanelFocus:
 		return m.buildWindow(primaryPanels, stateDetailPanel, bottomLine)
-	case ListPanelFocus, ReviewStackPanelFocus:
+	case ListPanelFocus:
 		return m.buildWindow(primaryPanels, reviewCombiPanels, bottomLine)
 	case ContentPanelFocus:
 		return m.buildWindowBasedOnZoom(primaryPanels, reviewCombiPanels, contentPanels, bottomLine)
@@ -203,6 +204,8 @@ func (m *model) buildWindowBasedOnFocus(primaryPanels, configContentPanel, state
 		return m.buildWindow(primaryPanels, sourceDetailPanel, bottomLine)
 	case ContextPanelFocus:
 		return m.buildWindow(primaryPanels, contextDetailPanel, bottomLine)
+	case ReviewStackProgressPanelFocus:
+		return m.buildWindow(primaryPanels, reviewStackPanel, bottomLine)
 	default:
 		return ""
 	}
@@ -255,19 +258,18 @@ func (m *model) setPanelSize() {
 func (m *model) setPrimaryPanelSizes() {
 	const (
 		stateSummaryPanelOuterHeight  = stateSummaryPanelHeight + borderHeight*2
-		reviewStackPanelOuterHeight   = reviewStackPanelHeight + borderHeight*2
+		reviewProgresPanelOuterHeight = reviewProgressPanelHeight + borderHeight*2
 		contextPanelOuterHeight       = contextPanelHeight + borderHeight*2
 		configSummaryPanelOuterHeight = configSummaryPanelHeight + borderHeight*2
 	)
 
-	listPanelHeight := m.winSize.height - stateSummaryPanelOuterHeight - reviewStackPanelOuterHeight - contextPanelOuterHeight - configSummaryPanelOuterHeight - footerHeight - borderHeight*2 - sourceListPanelHeight - borderHeight*2
+	listPanelHeight := m.winSize.height - stateSummaryPanelOuterHeight - reviewProgresPanelOuterHeight - contextPanelOuterHeight - configSummaryPanelOuterHeight - footerHeight - borderHeight*2 - sourceListPanelHeight - borderHeight*2
 	primaryAreaWidth, _ := m.calcAreaSize()
 
 	m.list.SetSize(primaryAreaWidth-borderWidth*2, listPanelHeight)
 	m.configSummaryPanel.Width = primaryAreaWidth - borderWidth*2
 	m.configSummaryPanel.Height = configSummaryPanelHeight
-	m.reviewStackPanel.Width = primaryAreaWidth - borderWidth*2
-	m.reviewStackPanel.Height = reviewStackPanelHeight
+	m.reviewProgressPanel.Width = primaryAreaWidth - borderWidth*2
 	m.statePanel.Width = primaryAreaWidth - borderWidth*2
 	m.statePanel.Height = stateSummaryPanelHeight
 	m.contextPanel.SetSize(primaryAreaWidth-borderWidth*2, contextPanelHeight)
@@ -303,6 +305,9 @@ func (m *model) setSecondaryPanelSizes() {
 
 	m.instantPromptPanel.SetWidth(secondlyAreaWidth - borderWidth*2)
 	m.instantPromptPanel.SetHeight(instantPromptPanelHeight)
+
+	m.reviewStackPanel.Width = secondlyAreaWidth - borderWidth*2
+	m.reviewStackPanel.Height = m.winSize.height - borderHeight*2 - footerHeight
 
 	m.stateDetailPanel.Width = secondlyAreaWidth - borderWidth*2
 	m.stateDetailPanel.Height = m.winSize.height - borderHeight*2 - footerHeight
@@ -359,7 +364,7 @@ func getRendered(text string, style string, width int) string {
 }
 
 func isFocusPrimary(state FocusState) bool {
-	if state == ListPanelFocus || state == ConfigSummaryPanelFocus || state == StatePanelFocus || state == ContextPanelFocus || state == ReviewStackPanelFocus || state == SourceListPanelFocus {
+	if state == ListPanelFocus || state == ConfigSummaryPanelFocus || state == StatePanelFocus || state == ContextPanelFocus || state == ReviewStackProgressPanelFocus || state == SourceListPanelFocus {
 		return true
 	}
 	return false

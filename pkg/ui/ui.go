@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/bubbles/list"
+	"github.com/charmbracelet/bubbles/progress"
 	"github.com/charmbracelet/bubbles/spinner"
 	"github.com/charmbracelet/bubbles/textarea"
 	"github.com/charmbracelet/bubbles/viewport"
@@ -56,46 +57,48 @@ type updateSourceListMsg struct {
 }
 
 type model struct {
-	list                list.Model
-	contentPanel        viewport.Model
-	reviewPanel         viewport.Model
-	reviewStackPanel    viewport.Model
-	instantPromptPanel  textarea.Model
-	configSummaryPanel  viewport.Model
-	configContentPanel  viewport.Model
-	statePanel          viewport.Model
-	stateDetailPanel    viewport.Model
-	contextPanel        list.Model
-	contextDetailPanel  viewport.Model
-	sourceDetailPanel   viewport.Model
-	sourceListPanel     list.Model
-	panelSize           panelSize
-	winSize             winSize
-	reviewList          []reviewInfo
-	targetDir           string
-	outputFile          string
-	stateFile           string
-	conf                config.Config
-	client              openai.Client
-	zoomState           ZoomState
-	focusState          FocusState
-	reviewState         ReviewState
-	reviewStack         []int
-	spinner             spinner.Model
-	instantPrompt       string
-	globalKeyMap        globalKeyMap
-	listKeyMap          listKeyMap
-	contentKeyMap       contentKeyMap
-	reviewKeyMap        reviewKeyMap
-	reviewStackKeyMap   reviewStackKeyMap
-	promptKeyMap        promptKeyMap
-	configSummaryKeyMap configSummaryKeyMap
-	sourceListKeyMap    sourceListKeyMap
-	stateKeyMap         stateKeyMap
-	contextKeyMap       contextKeyMap
-	uiState             state.State
-	currentHistoryIndex int
-	state               state.State
+	list                   list.Model
+	contentPanel           viewport.Model
+	reviewPanel            viewport.Model
+	reviewStackPanel       viewport.Model
+	instantPromptPanel     textarea.Model
+	configSummaryPanel     viewport.Model
+	configContentPanel     viewport.Model
+	statePanel             viewport.Model
+	stateDetailPanel       viewport.Model
+	contextPanel           list.Model
+	contextDetailPanel     viewport.Model
+	sourceDetailPanel      viewport.Model
+	sourceListPanel        list.Model
+	reviewProgressPanel    progress.Model
+	panelSize              panelSize
+	winSize                winSize
+	reviewList             []reviewInfo
+	targetDir              string
+	outputFile             string
+	stateFile              string
+	conf                   config.Config
+	client                 openai.Client
+	zoomState              ZoomState
+	focusState             FocusState
+	reviewState            ReviewState
+	reviewStack            []int
+	reviewStackDenominator int // reviewStackが0になるまでにたまったreviewの数
+	spinner                spinner.Model
+	instantPrompt          string
+	globalKeyMap           globalKeyMap
+	listKeyMap             listKeyMap
+	contentKeyMap          contentKeyMap
+	reviewKeyMap           reviewKeyMap
+	reviewStackKeyMap      reviewStackKeyMap
+	promptKeyMap           promptKeyMap
+	configSummaryKeyMap    configSummaryKeyMap
+	sourceListKeyMap       sourceListKeyMap
+	stateKeyMap            stateKeyMap
+	contextKeyMap          contextKeyMap
+	uiState                state.State
+	currentHistoryIndex    int
+	state                  state.State
 }
 
 func NewUi(conf config.Config, client openai.Client) model {
@@ -129,6 +132,7 @@ func NewUi(conf config.Config, client openai.Client) model {
 			Styles:          list.NewDefaultItemStyles(),
 		}, 0, 0),
 		sourceDetailPanel:   viewport.New(0, 0),
+		reviewProgressPanel: progress.New(),
 		reviewList:          []reviewInfo{},
 		targetDir:           conf.Target,
 		outputFile:          conf.Output,
@@ -159,6 +163,9 @@ func NewUi(conf config.Config, client openai.Client) model {
 	m.sourceListPanel.SetShowStatusBar(false)
 	m.sourceListPanel.SetShowFilter(false)
 	m.sourceListPanel.KeyMap.Filter.Unbind()
+
+	m.reviewProgressPanel.Width = 20
+	m.reviewProgressPanel.SetPercent(1.0)
 
 	m.contextPanel.SetShowTitle(false)
 	m.contextPanel.SetShowHelp(false)
@@ -230,16 +237,27 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		if msg.operation == Add {
 			m.addReviewStack(index)
+			m.reviewStackDenominator++
 		} else {
 			m.removeReviewStack(index)
 			m.changeItemTitlePrefix(index, "☑ ")
 		}
 		m.updateReviewStackPanel()
-		return m, nil
+		if len(m.reviewStack) == 0 {
+			cmd := m.reviewProgressPanel.SetPercent(1)
+			m.reviewStackDenominator = 0
+			return m, cmd
+		}
+		cmd := m.updateReviewProgressPanel()
+		return m, cmd
 	case updateSourceListMsg:
 		m.sourceListPanel.SetItems(getSourceItems(m.conf.Sources))
 		m.contextPanel.Update(msg)
 		m.list.SetItems(getItems(m.conf, m.reviewList))
+	case progress.FrameMsg:
+		progressModel, cmd := m.reviewProgressPanel.Update(msg)
+		m.reviewProgressPanel = progressModel.(progress.Model)
+		cmds = append(cmds, cmd)
 	default:
 		switch m.focusState {
 		case SourceListPanelFocus:
@@ -312,6 +330,14 @@ func (m *model) removeReviewStack(index int) {
 func (m *model) updateReviewStackPanel() {
 	itemTitleList := getItemListString(getReviewStackItems(m.list.Items(), m.reviewStack))
 	m.reviewStackPanel.SetContent(itemTitleList)
+}
+
+func (m *model) updateReviewProgressPanel() tea.Cmd {
+	percent := float64(1)
+	if m.reviewStackDenominator != 0 {
+		percent = 1 - float64(len(m.reviewStack))/float64(m.reviewStackDenominator)
+	}
+	return m.reviewProgressPanel.SetPercent(percent)
 }
 
 func (m *model) addContextStack(id string) (tea.Model, tea.Cmd) {
