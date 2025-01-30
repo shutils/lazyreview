@@ -36,6 +36,7 @@ type panels struct {
 	contextDetailPanel  viewport.Model
 	promptPanel         textarea.Model
 	spinner             spinner.Model
+	messagePanel        viewport.Model
 }
 
 func NewPanels() panels {
@@ -55,6 +56,7 @@ func NewPanels() panels {
 		contextDetailPanel:  viewport.New(0, 0),
 		promptPanel:         textarea.New(),
 		spinner:             spinner.New(),
+		messagePanel:        viewport.New(0, 0),
 	}
 
 	p.setInitSetting()
@@ -91,7 +93,7 @@ const (
 )
 
 const (
-	ListPanelFocus FocusState = iota
+	ItemListPanelFocus FocusState = iota
 	ContentPanelFocus
 	ReviewPanelFocus
 	ReviewStackProgressPanelFocus
@@ -100,6 +102,7 @@ const (
 	StatePanelFocus
 	ContextPanelFocus
 	SourceListPanelFocus
+	MessagePanelFocus
 	Other
 )
 
@@ -194,6 +197,12 @@ func (m *model) handleWindowSize(msg tea.WindowSizeMsg) {
 func (m *model) makeView() string {
 	m.setPanelSize()
 
+	if m.message != "" {
+		m.focusState = MessagePanelFocus
+		m.panels.messagePanel.SetContent(m.message)
+		return m.panels.messagePanel.View()
+	}
+
 	state := "/"
 	if m.reviewState == Reviewing {
 		state = m.panels.spinner.View()
@@ -203,7 +212,7 @@ func (m *model) makeView() string {
 	globalHelp := helpModel.View(m.keyMaps.globalKeyMap)
 	helpString := m.getHelpString(helpModel, globalHelp)
 
-	listPanel := m.buildPanel(m.panels.itemListPanel.View(), m.getPanelStyle(ListPanelFocus), m.panels.itemListPanel.Width(), m.panels.itemListPanel.Height(), "List")
+	listPanel := m.buildPanel(m.panels.itemListPanel.View(), m.getPanelStyle(ItemListPanelFocus), m.panels.itemListPanel.Width(), m.panels.itemListPanel.Height(), "List")
 	contentPanel := m.buildPanel(m.panels.itemPreviewPanel.View(), m.getPanelStyle(ContentPanelFocus), m.panels.itemPreviewPanel.Width, m.panels.itemPreviewPanel.Height, "Content")
 	reviewPanel := m.buildPanel(m.panels.itemReviewPanel.View(), m.getPanelStyle(ReviewPanelFocus), m.panels.itemReviewPanel.Width, m.panels.itemReviewPanel.Height, "Review")
 	reviewStackPanel := m.buildPanel(m.panels.reviewStackPanel.View(), m.getPanelStyle(Other), m.panels.reviewStackPanel.Width, m.panels.reviewStackPanel.Height, "Review stack")
@@ -240,7 +249,7 @@ func (m *model) makeView() string {
 
 func (m *model) getHelpString(helpModel help.Model, globalHelp string) string {
 	switch m.focusState {
-	case ListPanelFocus:
+	case ItemListPanelFocus:
 		return MakeBottomLine(globalHelp, helpModel.View(m.keyMaps.listKeyMap))
 	case ContentPanelFocus:
 		return MakeBottomLine(globalHelp, helpModel.View(m.keyMaps.contentKeyMap))
@@ -287,7 +296,7 @@ func (m *model) buildWindowBasedOnFocus(primaryPanels,
 		return m.buildWindow(primaryPanels, configContentPanel, bottomLine)
 	case StatePanelFocus:
 		return m.buildWindow(primaryPanels, stateDetailPanel, bottomLine)
-	case ListPanelFocus:
+	case ItemListPanelFocus:
 		return m.buildWindow(primaryPanels, reviewCombiPanels, bottomLine)
 	case ContentPanelFocus:
 		return m.buildWindowBasedOnZoom(primaryPanels, reviewCombiPanels, contentPanels, bottomLine)
@@ -346,6 +355,9 @@ func (m *model) calcAreaSize() (int, int) {
 func (m *model) setPanelSize() {
 	m.setPrimaryPanelSizes()
 	m.setSecondaryPanelSizes()
+
+	m.panels.messagePanel.Width = m.winSize.width
+	m.panels.messagePanel.Height = m.winSize.height
 }
 
 func (m *model) setPrimaryPanelSizes() {
@@ -475,7 +487,7 @@ func getRendered(text string, style string, width int) string {
 }
 
 func isFocusPrimary(state FocusState) bool {
-	if state == ListPanelFocus || state == ConfigSummaryPanelFocus || state == StatePanelFocus || state == ContextPanelFocus || state == ReviewStackProgressPanelFocus || state == SourceListPanelFocus {
+	if state == ItemListPanelFocus || state == ConfigSummaryPanelFocus || state == StatePanelFocus || state == ContextPanelFocus || state == ReviewStackProgressPanelFocus || state == SourceListPanelFocus {
 		return true
 	}
 	return false
