@@ -9,7 +9,7 @@ import (
 	"github.com/shutils/lazyreview/pkg/config"
 )
 
-func (m *model) onChangeListSelectedItem() (tea.Model, tea.Cmd) {
+func (m *model) onChangeListSelectedItem() (*model, tea.Cmd) {
 	selectedItem, ok := m.panels.itemListPanel.SelectedItem().(listItem)
 	reviewContent := "No review"
 	itemContent := previewContent(selectedItem, m.conf.Sources)

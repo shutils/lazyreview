@@ -70,6 +70,8 @@ type model struct {
 	uiState                state.State
 	currentHistoryIndex    int
 	state                  state.State
+	message                string
+	initialized            bool
 }
 
 func NewUi(conf config.Config, client openai.Client) model {
@@ -82,13 +84,15 @@ func NewUi(conf config.Config, client openai.Client) model {
 		stateFile:           conf.State,
 		conf:                conf,
 		client:              client,
-		focusState:          ListPanelFocus,
+		focusState:          ItemListPanelFocus,
 		reviewState:         NoAction,
 		reviewStack:         []int{},
 		instantPrompt:       "",
 		uiState:             state.LoadState(conf.State),
 		currentHistoryIndex: 0,
 		state:               state.State{},
+		message:             "",
+		initialized:         true,
 	}
 	m.panels.configDetailPanel.SetContent(strings.Join(conf.ToStringArray(), "\n"))
 	m.panels.configSummaryPanel.SetContent("Config path: " + conf.ConfigPath)
@@ -178,6 +182,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		progressModel, cmd := m.panels.reviewProgressPanel.Update(msg)
 		m.panels.reviewProgressPanel = progressModel.(progress.Model)
 		cmds = append(cmds, cmd)
+	case showMessageMsg:
+		if msg.message != "" {
+			m.message = msg.message + "\n\n" + "Press enter to return..."
+			m.focusState = MessagePanelFocus
+		}
+		return m, nil
 	default:
 		switch m.focusState {
 		case SourceListPanelFocus:
@@ -191,7 +201,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		cmds = append(cmds, cmd)
 	}
 
-	if m.focusState == ListPanelFocus {
+	if m.focusState == ItemListPanelFocus {
 		m.panels.itemListPanel, cmd = m.panels.itemListPanel.Update(msg)
 		cmds = append(cmds, cmd)
 	}

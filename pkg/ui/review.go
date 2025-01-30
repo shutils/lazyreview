@@ -3,7 +3,6 @@ package ui
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"os"
 	"strings"
 
@@ -48,7 +47,7 @@ const (
 	Reviewing
 )
 
-func (m *model) saveReviews() {
+func (m *model) saveReviews() tea.Cmd {
 	var reviews []reviewInfo
 	for _, review := range m.reviewList {
 		reviews = append(reviews, reviewInfo{
@@ -58,23 +57,38 @@ func (m *model) saveReviews() {
 			State:  "finish",
 		})
 	}
-	jsonData, _ := json.MarshalIndent(reviews, "", "  ")
-	_ = os.WriteFile(m.conf.Output, jsonData, 0644)
+	jsonData, err := json.MarshalIndent(reviews, "", "  ")
+	if err != nil {
+		return func() tea.Msg {
+			return SendErrorMessage("Failed to save marshal reviews", err)
+		}
+	}
+	err = os.WriteFile(m.conf.Output, jsonData, 0644)
+	if err != nil {
+		return func() tea.Msg {
+			return SendErrorMessage("Failed to save json", err)
+		}
+	}
+	return nil
 }
 
-func (m *model) loadReviews() {
+func (m *model) loadReviews() (*model, tea.Cmd) {
 	data, err := os.ReadFile(m.outputFile)
 	if os.IsNotExist(err) {
-		// ファイルが存在しない場合、新しいマップを初期化
 		m.reviewList = []reviewInfo{}
-		return
+		return m, nil
 	}
 	if err != nil {
-		log.Fatalf("Failed to read reviews: %v", err)
+		return m, func() tea.Msg {
+			return SendErrorMessage("Failed to read reviews", err)
+		}
 	}
 	if err := json.Unmarshal(data, &m.reviewList); err != nil {
-		log.Fatalf("Failed to unmarshal reviews: %v", err)
+		return m, func() tea.Msg {
+			return SendErrorMessage("Failed to unmarshal reviews", err)
+		}
 	}
+	return m, nil
 }
 
 func (m *model) getReviewIndex(id string) int {

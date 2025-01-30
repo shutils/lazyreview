@@ -18,6 +18,7 @@ type keyMaps struct {
 	stateKeyMap
 	contextKeyMap
 	sourceListKeyMap
+	messageKeyMap
 }
 
 func DefaultKeyMap() keyMaps {
@@ -32,6 +33,7 @@ func DefaultKeyMap() keyMaps {
 		stateKeyMap:         GetStateKeymap(),
 		contextKeyMap:       GetContextKeymap(),
 		sourceListKeyMap:    GetSourceListKeymap(),
+		messageKeyMap:       GetMessageKeymap(),
 	}
 }
 
@@ -88,6 +90,10 @@ func GetContextKeymap() contextKeyMap {
 
 func GetSourceListKeymap() sourceListKeyMap {
 	return SourceListKeyMap
+}
+
+func GetMessageKeymap() messageKeyMap {
+	return MessageKeyMap
 }
 
 var GlobalKeyMap = globalKeyMap{
@@ -593,6 +599,38 @@ var SourceListKeyMap = sourceListKeyMap{
 	),
 }
 
+type messageKeyMap struct {
+	Quit   key.Binding
+	Return key.Binding
+}
+
+func (k messageKeyMap) ShortHelp() []key.Binding {
+	return []key.Binding{
+		k.Quit,
+		k.Return,
+	}
+}
+
+func (k messageKeyMap) FullHelp() [][]key.Binding {
+	return [][]key.Binding{
+		{
+			k.Quit,
+			k.Return,
+		},
+	}
+}
+
+var MessageKeyMap = messageKeyMap{
+	Quit: key.NewBinding(
+		key.WithKeys("q"),
+		key.WithHelp("q", "quit"),
+	),
+	Return: key.NewBinding(
+		key.WithKeys("enter"),
+		key.WithHelp("enter", "return"),
+	),
+}
+
 func MakeBottomLine(globalHelp string, panelHelp string) string {
 	return lipgloss.JoinHorizontal(lipgloss.Left, globalHelp, " | ", panelHelp)
 }
@@ -799,6 +837,19 @@ func (m *model) handleContextKey(msg tea.Msg) func() (tea.Model, tea.Cmd) {
 	return nil
 }
 
+func (m *model) handleMessageKey(msg tea.Msg) func() (tea.Model, tea.Cmd) {
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		switch {
+		case key.Matches(msg, m.keyMaps.messageKeyMap.Quit):
+			return m.Quit
+		case key.Matches(msg, m.keyMaps.messageKeyMap.Return):
+			return m.ExitMessagePanel
+		}
+	}
+	return nil
+}
+
 func (m *model) handleKey(msg tea.Msg) func() (tea.Model, tea.Cmd) {
 	if action := m.handleGlobalKey(msg); action != nil {
 		return func() (tea.Model, tea.Cmd) {
@@ -807,7 +858,7 @@ func (m *model) handleKey(msg tea.Msg) func() (tea.Model, tea.Cmd) {
 	}
 
 	switch m.focusState {
-	case ListPanelFocus:
+	case ItemListPanelFocus:
 		if action := m.handleItemListKey(msg); action != nil {
 			return func() (tea.Model, tea.Cmd) {
 				return action()
@@ -857,6 +908,12 @@ func (m *model) handleKey(msg tea.Msg) func() (tea.Model, tea.Cmd) {
 		}
 	case SourceListPanelFocus:
 		if action := m.handleSourceListKey(msg); action != nil {
+			return func() (tea.Model, tea.Cmd) {
+				return action()
+			}
+		}
+	case MessagePanelFocus:
+		if action := m.handleMessageKey(msg); action != nil {
 			return func() (tea.Model, tea.Cmd) {
 				return action()
 			}

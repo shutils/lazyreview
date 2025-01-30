@@ -135,7 +135,7 @@ func (m *model) focusPanel(panel FocusState) (tea.Model, tea.Cmd) {
 }
 
 func (m *model) FocusItemListPanel() (tea.Model, tea.Cmd) {
-	return m.focusPanel(ListPanelFocus)
+	return m.focusPanel(ItemListPanelFocus)
 }
 
 func (m *model) FocusContentPanel() (tea.Model, tea.Cmd) {
@@ -168,6 +168,11 @@ func (m *model) FocusContextPanel() (tea.Model, tea.Cmd) {
 
 func (m *model) FocusSourceListPanel() (tea.Model, tea.Cmd) {
 	return m.focusPanel(SourceListPanelFocus)
+}
+
+func (m *model) ExitMessagePanel() (tea.Model, tea.Cmd) {
+	m.message = ""
+	return m.focusPanel(ItemListPanelFocus)
 }
 
 func (m *model) InstantPromptHistoryPrev() (tea.Model, tea.Cmd) {
@@ -204,8 +209,16 @@ func (m *model) OpenCurrentReview() (tea.Model, tea.Cmd) {
 	review := m.reviewList[m.getReviewIndex(selectedItem.id)].Review
 	state.SaveTmpReview(m.conf.TmpReviewPath, review)
 
-	exec.Command(m.conf.Opener, m.conf.TmpReviewPath).Start()
-	return m, nil
+	c := exec.Command(m.conf.Opener, m.conf.TmpReviewPath)
+	return m, tea.ExecProcess(c, func(err error) tea.Msg {
+		var message = ""
+		if err != nil {
+			message = err.Error()
+		}
+		return showMessageMsg{
+			message: message,
+		}
+	})
 }
 
 func (m *model) ToggleSourceEnabled() (tea.Model, tea.Cmd) {
