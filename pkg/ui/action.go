@@ -229,3 +229,18 @@ func (m *model) ToggleSourceEnabled() (tea.Model, tea.Cmd) {
 	}
 	return m, cmd
 }
+
+func (m *model) DeleteReviewResult() (tea.Model, tea.Cmd) {
+	selectedItem := m.panels.itemListPanel.SelectedItem()
+	item, ok := selectedItem.(listItem)
+	if !ok {
+		return m, func() tea.Msg {
+			return SendErrorMessage("Failed to delete review:", nil)
+		}
+	}
+	m.deleteReview(item.id)
+	index := m.panels.itemListPanel.Index()
+	m.changeItemTitlePrefix(index, "☐ ")
+	m.onChangeListSelectedItem()
+	return m, nil
+}
