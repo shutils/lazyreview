@@ -7,6 +7,34 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
+type keyMaps struct {
+	globalKeyMap
+	listKeyMap
+	contentKeyMap
+	reviewKeyMap
+	reviewStackKeyMap
+	promptKeyMap
+	configSummaryKeyMap
+	stateKeyMap
+	contextKeyMap
+	sourceListKeyMap
+}
+
+func DefaultKeyMap() keyMaps {
+	return keyMaps{
+		globalKeyMap:        GetGlobalKeymap(),
+		listKeyMap:          GetListKeymap(),
+		contentKeyMap:       GetContentKeymap(),
+		reviewKeyMap:        GetReviewKeymap(),
+		reviewStackKeyMap:   GetReviewStackKeymap(),
+		promptKeyMap:        GetPromptKeymap(),
+		configSummaryKeyMap: GetConfigSummaryKeymap(),
+		stateKeyMap:         GetStateKeymap(),
+		contextKeyMap:       GetContextKeymap(),
+		sourceListKeyMap:    GetSourceListKeymap(),
+	}
+}
+
 type globalKeyMap struct {
 	Quit      key.Binding
 	ZoomPanel key.Binding
@@ -573,9 +601,9 @@ func (m *model) handleGlobalKey(msg tea.Msg) func() (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch {
-		case key.Matches(msg, m.globalKeyMap.Quit):
+		case key.Matches(msg, m.keyMaps.globalKeyMap.Quit):
 			return m.Quit
-		case key.Matches(msg, m.globalKeyMap.ZoomPanel):
+		case key.Matches(msg, m.keyMaps.globalKeyMap.ZoomPanel):
 			return m.ZoomPanel
 		}
 	}
@@ -583,39 +611,39 @@ func (m *model) handleGlobalKey(msg tea.Msg) func() (tea.Model, tea.Cmd) {
 }
 
 func (m *model) handleListKey(msg tea.Msg) func() (tea.Model, tea.Cmd) {
-	if m.list.FilterState() == list.Filtering {
+	if m.panels.itemListPanel.FilterState() == list.Filtering {
 		return nil
 	}
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch {
-		case key.Matches(msg, m.listKeyMap.ListCursorDown):
+		case key.Matches(msg, m.keyMaps.listKeyMap.ListCursorDown):
 			return m.ListCursorDown
-		case key.Matches(msg, m.listKeyMap.ListCursorUp):
+		case key.Matches(msg, m.keyMaps.listKeyMap.ListCursorUp):
 			return m.ListCursorUp
-		case key.Matches(msg, m.listKeyMap.ReviewStack):
+		case key.Matches(msg, m.keyMaps.listKeyMap.ReviewStack):
 			return m.ReviewStack
-		case key.Matches(msg, m.listKeyMap.ReloadItems):
+		case key.Matches(msg, m.keyMaps.listKeyMap.ReloadItems):
 			return m.ReloadItems
-		case key.Matches(msg, m.listKeyMap.FocusContentPanel):
+		case key.Matches(msg, m.keyMaps.listKeyMap.FocusContentPanel):
 			return m.FocusContentPanel
-		case key.Matches(msg, m.listKeyMap.FocusReviewStackPanel):
+		case key.Matches(msg, m.keyMaps.listKeyMap.FocusReviewStackPanel):
 			return m.FocusReviewStackPanel
-		case key.Matches(msg, m.listKeyMap.FocusStatePanel):
+		case key.Matches(msg, m.keyMaps.listKeyMap.FocusStatePanel):
 			return m.FocusStatePanel
-		case key.Matches(msg, m.listKeyMap.FocusInstantPrompt):
+		case key.Matches(msg, m.keyMaps.listKeyMap.FocusInstantPrompt):
 			return m.FocusInstantPrompt
-		case key.Matches(msg, m.listKeyMap.ReviewContentCursorDown):
+		case key.Matches(msg, m.keyMaps.listKeyMap.ReviewContentCursorDown):
 			return m.ReviewContentCursorDown
-		case key.Matches(msg, m.listKeyMap.ReviewContentCursorUp):
+		case key.Matches(msg, m.keyMaps.listKeyMap.ReviewContentCursorUp):
 			return m.ReviewContentCursorUp
-		case key.Matches(msg, m.listKeyMap.ReviewContentHalfViewDown):
+		case key.Matches(msg, m.keyMaps.listKeyMap.ReviewContentHalfViewDown):
 			return m.ReviewContentHalfViewDown
-		case key.Matches(msg, m.listKeyMap.ReviewContentHalfViewUp):
+		case key.Matches(msg, m.keyMaps.listKeyMap.ReviewContentHalfViewUp):
 			return m.ReviewContentHalfViewUp
-		case key.Matches(msg, m.listKeyMap.OpenReview):
+		case key.Matches(msg, m.keyMaps.listKeyMap.OpenReview):
 			return m.OpenCurrentReview
-		case key.Matches(msg, m.listKeyMap.ToggleAiContext):
+		case key.Matches(msg, m.keyMaps.listKeyMap.ToggleAiContext):
 			return m.ToggleAiContext
 		}
 	}
@@ -626,21 +654,21 @@ func (m *model) handleContentKey(msg tea.Msg) func() (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch {
-		case key.Matches(msg, m.contentKeyMap.ItemContentHalfViewDown):
+		case key.Matches(msg, m.keyMaps.contentKeyMap.ItemContentHalfViewDown):
 			return m.ItemContentHalfViewDown
-		case key.Matches(msg, m.contentKeyMap.ItemContentHalfViewUp):
+		case key.Matches(msg, m.keyMaps.contentKeyMap.ItemContentHalfViewUp):
 			return m.ItemContentHalfViewUp
-		case key.Matches(msg, m.contentKeyMap.ItemContentCursorDown):
+		case key.Matches(msg, m.keyMaps.contentKeyMap.ItemContentCursorDown):
 			return m.ItemContentCursorDown
-		case key.Matches(msg, m.contentKeyMap.ItemContentCursorUp):
+		case key.Matches(msg, m.keyMaps.contentKeyMap.ItemContentCursorUp):
 			return m.ItemContentCursorUp
-		case key.Matches(msg, m.contentKeyMap.ReviewStack):
+		case key.Matches(msg, m.keyMaps.contentKeyMap.ReviewStack):
 			return m.ReviewStack
-		case key.Matches(msg, m.contentKeyMap.FocusInstantPrompt):
+		case key.Matches(msg, m.keyMaps.contentKeyMap.FocusInstantPrompt):
 			return m.FocusInstantPrompt
-		case key.Matches(msg, m.contentKeyMap.FocusReviewPanel):
+		case key.Matches(msg, m.keyMaps.contentKeyMap.FocusReviewPanel):
 			return m.FocusReviewPanel
-		case key.Matches(msg, m.contentKeyMap.FocusListPanel):
+		case key.Matches(msg, m.keyMaps.contentKeyMap.FocusListPanel):
 			return m.FocusListPanel
 		}
 	}
@@ -651,21 +679,21 @@ func (m *model) handleReviewKey(msg tea.Msg) func() (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch {
-		case key.Matches(msg, m.reviewKeyMap.ReviewContentCursorDown):
+		case key.Matches(msg, m.keyMaps.reviewKeyMap.ReviewContentCursorDown):
 			return m.ReviewContentCursorDown
-		case key.Matches(msg, m.reviewKeyMap.ReviewContentCursorUp):
+		case key.Matches(msg, m.keyMaps.reviewKeyMap.ReviewContentCursorUp):
 			return m.ReviewContentCursorUp
-		case key.Matches(msg, m.reviewKeyMap.ReviewContentHalfViewDown):
+		case key.Matches(msg, m.keyMaps.reviewKeyMap.ReviewContentHalfViewDown):
 			return m.ReviewContentHalfViewDown
-		case key.Matches(msg, m.reviewKeyMap.ReviewContentHalfViewUp):
+		case key.Matches(msg, m.keyMaps.reviewKeyMap.ReviewContentHalfViewUp):
 			return m.ReviewContentHalfViewUp
-		case key.Matches(msg, m.reviewKeyMap.ReviewStack):
+		case key.Matches(msg, m.keyMaps.reviewKeyMap.ReviewStack):
 			return m.ReviewStack
-		case key.Matches(msg, m.reviewKeyMap.FocusInstantPrompt):
+		case key.Matches(msg, m.keyMaps.reviewKeyMap.FocusInstantPrompt):
 			return m.FocusInstantPrompt
-		case key.Matches(msg, m.reviewKeyMap.FocusContentPanel):
+		case key.Matches(msg, m.keyMaps.reviewKeyMap.FocusContentPanel):
 			return m.FocusContentPanel
-		case key.Matches(msg, m.reviewKeyMap.FocusListPanel):
+		case key.Matches(msg, m.keyMaps.reviewKeyMap.FocusListPanel):
 			return m.FocusListPanel
 		}
 	}
@@ -676,9 +704,9 @@ func (m *model) handleReviewStackKey(msg tea.Msg) func() (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch {
-		case key.Matches(msg, m.reviewStackKeyMap.FocusListPanel):
+		case key.Matches(msg, m.keyMaps.reviewStackKeyMap.FocusListPanel):
 			return m.FocusListPanel
-		case key.Matches(msg, m.reviewStackKeyMap.FocusContextPanel):
+		case key.Matches(msg, m.keyMaps.reviewStackKeyMap.FocusContextPanel):
 			return m.FocusContextPanel
 		}
 	}
@@ -689,13 +717,13 @@ func (m *model) handlePromptKey(msg tea.Msg) func() (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch {
-		case key.Matches(msg, m.promptKeyMap.Blur):
+		case key.Matches(msg, m.keyMaps.promptKeyMap.Blur):
 			return m.BlurInstantPrompt
-		case key.Matches(msg, m.promptKeyMap.InstantPromptHistoryPrev):
+		case key.Matches(msg, m.keyMaps.promptKeyMap.InstantPromptHistoryPrev):
 			return m.InstantPromptHistoryPrev
-		case key.Matches(msg, m.promptKeyMap.InstantPromptHistoryNext):
+		case key.Matches(msg, m.keyMaps.promptKeyMap.InstantPromptHistoryNext):
 			return m.InstantPromptHistoryNext
-		case key.Matches(msg, m.promptKeyMap.ReviewStack):
+		case key.Matches(msg, m.keyMaps.promptKeyMap.ReviewStack):
 			return m.ReviewStack
 		}
 	}
@@ -706,9 +734,9 @@ func (m *model) handleConfigSummaryKey(msg tea.Msg) func() (tea.Model, tea.Cmd) 
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch {
-		case key.Matches(msg, m.configSummaryKeyMap.FocusStateSummaryPanel):
+		case key.Matches(msg, m.keyMaps.configSummaryKeyMap.FocusStateSummaryPanel):
 			return m.FocusStatePanel
-		case key.Matches(msg, m.configSummaryKeyMap.FocusSourceList):
+		case key.Matches(msg, m.keyMaps.configSummaryKeyMap.FocusSourceList):
 			return m.FocusSourceListPanel
 		}
 	}
@@ -719,11 +747,11 @@ func (m *model) handleSourceListKey(msg tea.Msg) func() (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch {
-		case key.Matches(msg, m.sourceListKeyMap.FocusConfigPanel):
+		case key.Matches(msg, m.keyMaps.sourceListKeyMap.FocusConfigPanel):
 			return m.FocusConfigSummaryPanel
-		case key.Matches(msg, m.sourceListKeyMap.FocusContextPanel):
+		case key.Matches(msg, m.keyMaps.sourceListKeyMap.FocusContextPanel):
 			return m.FocusContextPanel
-		case key.Matches(msg, m.sourceListKeyMap.ToggleSourceEnabled):
+		case key.Matches(msg, m.keyMaps.sourceListKeyMap.ToggleSourceEnabled):
 			return m.ToggleSourceEnabled
 		}
 	}
@@ -734,9 +762,9 @@ func (m *model) handleStateKey(msg tea.Msg) func() (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch {
-		case key.Matches(msg, m.stateKeyMap.FocusConfigSummaryPanel):
+		case key.Matches(msg, m.keyMaps.stateKeyMap.FocusConfigSummaryPanel):
 			return m.FocusConfigSummaryPanel
-		case key.Matches(msg, m.stateKeyMap.FocusListPanel):
+		case key.Matches(msg, m.keyMaps.stateKeyMap.FocusListPanel):
 			return m.FocusListPanel
 		}
 	}
@@ -747,12 +775,12 @@ func (m *model) handleContextKey(msg tea.Msg) func() (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch {
-		case key.Matches(msg, m.contextKeyMap.FocusReviewStackPanel):
+		case key.Matches(msg, m.keyMaps.contextKeyMap.FocusReviewStackPanel):
 			return m.FocusReviewStackPanel
-		case key.Matches(msg, m.contextKeyMap.FocusSourceListPanel):
+		case key.Matches(msg, m.keyMaps.contextKeyMap.FocusSourceListPanel):
 			return m.FocusSourceListPanel
-		case key.Matches(msg, m.contextKeyMap.RemoveContext):
-			currItem := m.contextPanel.SelectedItem()
+		case key.Matches(msg, m.keyMaps.contextKeyMap.RemoveContext):
+			currItem := m.panels.contextListPanel.SelectedItem()
 			currListItem, ok := currItem.(listItem)
 			if !ok {
 				return func() (tea.Model, tea.Cmd) {
@@ -762,9 +790,9 @@ func (m *model) handleContextKey(msg tea.Msg) func() (tea.Model, tea.Cmd) {
 			return func() (tea.Model, tea.Cmd) {
 				return m.removeContextStack(currListItem.id)
 			}
-		case key.Matches(msg, m.contextKeyMap.CursorDown):
+		case key.Matches(msg, m.keyMaps.contextKeyMap.CursorDown):
 			return m.ContextDetailCursorDown
-		case key.Matches(msg, m.contextKeyMap.CursorUp):
+		case key.Matches(msg, m.keyMaps.contextKeyMap.CursorUp):
 			return m.ContextDetailCursorUp
 		}
 	}

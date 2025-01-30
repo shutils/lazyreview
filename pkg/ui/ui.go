@@ -5,9 +5,6 @@ import (
 
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/progress"
-	"github.com/charmbracelet/bubbles/spinner"
-	"github.com/charmbracelet/bubbles/textarea"
-	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/shutils/lazyreview/pkg/config"
 	"github.com/shutils/lazyreview/pkg/openai"
@@ -15,11 +12,8 @@ import (
 )
 
 type panelSize struct {
-	primaryPanelWidth, secondlyPanelWidth,
-	primaryPanelHeight, secondlyPanelHeight,
-	itemPreviewPanelWidth, itemReviewPanelWidth,
-	listPanelHeight, configPanelHeight, itemPreviewPanelHeight, itemReviewPanelHeight, instantPromptPanelHeight,
-	statePanelHeight, contextPanelHeight, reviewStackPanelHeight int
+	secondlyPanelWidth,
+	itemPreviewPanelWidth, itemReviewPanelWidth int
 }
 
 type winSize struct {
@@ -57,20 +51,8 @@ type updateSourceListMsg struct {
 }
 
 type model struct {
-	list                   list.Model
-	contentPanel           viewport.Model
-	reviewPanel            viewport.Model
-	reviewStackPanel       viewport.Model
-	instantPromptPanel     textarea.Model
-	configSummaryPanel     viewport.Model
-	configContentPanel     viewport.Model
-	statePanel             viewport.Model
-	stateDetailPanel       viewport.Model
-	contextPanel           list.Model
-	contextDetailPanel     viewport.Model
-	sourceDetailPanel      viewport.Model
-	sourceListPanel        list.Model
-	reviewProgressPanel    progress.Model
+	panels                 panels
+	keyMaps                keyMaps
 	panelSize              panelSize
 	winSize                winSize
 	reviewList             []reviewInfo
@@ -84,55 +66,16 @@ type model struct {
 	reviewState            ReviewState
 	reviewStack            []int
 	reviewStackDenominator int // reviewStackが0になるまでにたまったreviewの数
-	spinner                spinner.Model
 	instantPrompt          string
-	globalKeyMap           globalKeyMap
-	listKeyMap             listKeyMap
-	contentKeyMap          contentKeyMap
-	reviewKeyMap           reviewKeyMap
-	reviewStackKeyMap      reviewStackKeyMap
-	promptKeyMap           promptKeyMap
-	configSummaryKeyMap    configSummaryKeyMap
-	sourceListKeyMap       sourceListKeyMap
-	stateKeyMap            stateKeyMap
-	contextKeyMap          contextKeyMap
 	uiState                state.State
 	currentHistoryIndex    int
 	state                  state.State
 }
 
 func NewUi(conf config.Config, client openai.Client) model {
-	itemList := list.New([]list.Item{}, list.NewDefaultDelegate(), 0, 0) // listの高さを設定
-	itemList.SetShowHelp(false)
-	itemList.KeyMap.Quit.Unbind()
-	itemList.SetShowTitle(false)
-	contentPanel := viewport.New(0, 20)
-	reviewPanel := viewport.New(0, 20)
-	instantPromptPanel := textarea.New()
-	configPanel := viewport.New(0, 20)
-	configPanel.SetContent("Config path: " + conf.ConfigPath)
-	configContentPanel := viewport.New(0, 20)
-	configContentPanel.SetContent(strings.Join(conf.ToStringArray(), "\n"))
 	m := model{
-		list:               itemList,
-		contentPanel:       contentPanel,
-		reviewPanel:        reviewPanel,
-		instantPromptPanel: instantPromptPanel,
-		configSummaryPanel: configPanel,
-		configContentPanel: configContentPanel,
-		statePanel:         viewport.New(0, 0),
-		stateDetailPanel:   viewport.New(0, 0),
-		contextPanel: list.New([]list.Item{}, list.DefaultDelegate{
-			ShowDescription: false,
-			Styles:          list.NewDefaultItemStyles(),
-		}, 0, 0),
-		contextDetailPanel: viewport.New(0, 0),
-		sourceListPanel: list.New([]list.Item{}, list.DefaultDelegate{
-			ShowDescription: false,
-			Styles:          list.NewDefaultItemStyles(),
-		}, 0, 0),
-		sourceDetailPanel:   viewport.New(0, 0),
-		reviewProgressPanel: progress.New(),
+		panels:              NewPanels(),
+		keyMaps:             DefaultKeyMap(),
 		reviewList:          []reviewInfo{},
 		targetDir:           conf.Target,
 		outputFile:          conf.Output,
@@ -142,48 +85,25 @@ func NewUi(conf config.Config, client openai.Client) model {
 		focusState:          ListPanelFocus,
 		reviewState:         NoAction,
 		reviewStack:         []int{},
-		spinner:             spinner.New(),
 		instantPrompt:       "",
-		globalKeyMap:        GetGlobalKeymap(),
-		listKeyMap:          GetListKeymap(),
-		contentKeyMap:       GetContentKeymap(),
-		reviewKeyMap:        GetReviewKeymap(),
-		reviewStackKeyMap:   GetReviewStackKeymap(),
-		promptKeyMap:        GetPromptKeymap(),
-		configSummaryKeyMap: GetConfigSummaryKeymap(),
-		stateKeyMap:         GetStateKeymap(),
-		contextKeyMap:       GetContextKeymap(),
-		sourceListKeyMap:    GetSourceListKeymap(),
 		uiState:             state.LoadState(conf.State),
 		currentHistoryIndex: 0,
 		state:               state.State{},
 	}
-	m.sourceListPanel.SetShowTitle(false)
-	m.sourceListPanel.SetShowHelp(false)
-	m.sourceListPanel.SetShowStatusBar(false)
-	m.sourceListPanel.SetShowFilter(false)
-	m.sourceListPanel.KeyMap.Filter.Unbind()
-
-	m.reviewProgressPanel.Width = 20
-	m.reviewProgressPanel.SetPercent(1.0)
-
-	m.contextPanel.SetShowTitle(false)
-	m.contextPanel.SetShowHelp(false)
-	m.contextPanel.SetShowStatusBar(false)
-	m.contextPanel.SetShowFilter(false)
-	m.contextPanel.KeyMap.Filter.Unbind()
+	m.panels.configDetailPanel.SetContent(strings.Join(conf.ToStringArray(), "\n"))
+	m.panels.configSummaryPanel.SetContent("Config path: " + conf.ConfigPath)
 
 	m.UpdateState()
 	m.currentHistoryIndex = len(m.uiState.PromptHistory)
 	m.loadReviews()
-	m.list.SetItems(getItems(m.conf, m.reviewList))
-	m.sourceListPanel.SetItems(getSourceItems(m.conf.Sources))
+	m.panels.itemListPanel.SetItems(getItems(m.conf, m.reviewList))
+	m.panels.sourceListPanel.SetItems(getSourceItems(m.conf.Sources))
 	m.onChangeListSelectedItem()
 	return m
 }
 
 func (m model) Init() tea.Cmd {
-	return m.spinner.Tick
+	return m.panels.spinner.Tick
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -198,12 +118,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.handleWindowSize(msg)
 	case reviewMsg:
-		selectedItem := m.list.SelectedItem().(listItem)
-		index := findIndex(m.list.Items(), msg.id)
+		selectedItem := m.panels.itemListPanel.SelectedItem().(listItem)
+		index := findIndex(m.panels.itemListPanel.Items(), msg.id)
 		if index == -1 {
 			return m, nil
 		}
-		item := m.list.Items()[index].(listItem)
+		item := m.panels.itemListPanel.Items()[index].(listItem)
 		review := reviewInfo{
 			ID:     item.id,
 			Param:  item.param,
@@ -217,7 +137,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		m.saveReviews()
 		if selectedItem.id == msg.id {
-			m.reviewPanel.SetContent(msg.content)
+			m.panels.itemReviewPanel.SetContent(msg.content)
 			m.onChangeListSelectedItem()
 		}
 		cmd = func() tea.Msg {
@@ -231,7 +151,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case reviewStateMsg:
 		m.reviewState = msg.state
 	case reviewStackMsg:
-		index := findIndex(m.list.Items(), msg.id)
+		index := findIndex(m.panels.itemListPanel.Items(), msg.id)
 		if index == -1 {
 			return m, nil
 		}
@@ -244,52 +164,52 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		m.updateReviewStackPanel()
 		if len(m.reviewStack) == 0 {
-			cmd := m.reviewProgressPanel.SetPercent(1)
+			cmd := m.panels.reviewProgressPanel.SetPercent(1)
 			m.reviewStackDenominator = 0
 			return m, cmd
 		}
 		cmd := m.updateReviewProgressPanel()
 		return m, cmd
 	case updateSourceListMsg:
-		m.sourceListPanel.SetItems(getSourceItems(m.conf.Sources))
-		m.contextPanel.Update(msg)
-		m.list.SetItems(getItems(m.conf, m.reviewList))
+		m.panels.sourceListPanel.SetItems(getSourceItems(m.conf.Sources))
+		m.panels.contextListPanel.Update(msg)
+		m.panels.itemListPanel.SetItems(getItems(m.conf, m.reviewList))
 	case progress.FrameMsg:
-		progressModel, cmd := m.reviewProgressPanel.Update(msg)
-		m.reviewProgressPanel = progressModel.(progress.Model)
+		progressModel, cmd := m.panels.reviewProgressPanel.Update(msg)
+		m.panels.reviewProgressPanel = progressModel.(progress.Model)
 		cmds = append(cmds, cmd)
 	default:
 		switch m.focusState {
 		case SourceListPanelFocus:
-			selectedSourceName := m.sourceListPanel.SelectedItem().(sourceItem)
+			selectedSourceName := m.panels.sourceListPanel.SelectedItem().(sourceItem)
 			selectedSource := m.conf.GetSourceFromName(selectedSourceName.name)
-			m.sourceDetailPanel.SetContent(selectedSource.String())
+			m.panels.contextDetailPanel.SetContent(selectedSource.String())
 		case ContextPanelFocus:
-			m.contextDetailPanel.SetContent(m.getContextString())
+			m.panels.contextDetailPanel.SetContent(m.getContextString())
 		}
-		m.spinner, cmd = m.spinner.Update(msg)
+		m.panels.spinner, cmd = m.panels.spinner.Update(msg)
 		cmds = append(cmds, cmd)
 	}
 
 	if m.focusState == ListPanelFocus {
-		m.list, cmd = m.list.Update(msg)
+		m.panels.itemListPanel, cmd = m.panels.itemListPanel.Update(msg)
 		cmds = append(cmds, cmd)
 	}
 
 	if m.focusState == SourceListPanelFocus {
-		m.sourceListPanel, cmd = m.sourceListPanel.Update(msg)
+		m.panels.sourceListPanel, cmd = m.panels.sourceListPanel.Update(msg)
 		cmds = append(cmds, cmd)
 	}
 
 	if m.focusState == ContextPanelFocus {
-		m.contextPanel, cmd = m.contextPanel.Update(msg)
+		m.panels.contextListPanel, cmd = m.panels.contextListPanel.Update(msg)
 		cmds = append(cmds, cmd)
 	}
 
 	if m.focusState == InstantPromptPanelFocus {
-		m.instantPromptPanel, cmd = m.instantPromptPanel.Update(msg)
+		m.panels.promptPanel, cmd = m.panels.promptPanel.Update(msg)
 		cmds = append(cmds, cmd)
-		m.instantPrompt = m.instantPromptPanel.Value()
+		m.instantPrompt = m.panels.promptPanel.Value()
 	}
 
 	return m, tea.Batch(cmds...)
@@ -301,8 +221,8 @@ func (m model) View() string {
 
 func (m *model) UpdateState() (tea.Model, tea.Cmd) {
 	m.state = state.LoadState(m.stateFile)
-	m.statePanel.SetContent(m.state.ShowUsage(m.conf.ModelCost))
-	m.stateDetailPanel.SetContent(m.state.ShowUsedToken())
+	m.panels.stateSummaryPanel.SetContent(m.state.ShowUsage(m.conf.ModelCost))
+	m.panels.stateDetailPanel.SetContent(m.state.ShowUsedToken())
 	return m, nil
 }
 
@@ -328,8 +248,8 @@ func (m *model) removeReviewStack(index int) {
 }
 
 func (m *model) updateReviewStackPanel() {
-	itemTitleList := getItemListString(getReviewStackItems(m.list.Items(), m.reviewStack))
-	m.reviewStackPanel.SetContent(itemTitleList)
+	itemTitleList := getItemListString(getReviewStackItems(m.panels.itemListPanel.Items(), m.reviewStack))
+	m.panels.reviewStackPanel.SetContent(itemTitleList)
 }
 
 func (m *model) updateReviewProgressPanel() tea.Cmd {
@@ -337,25 +257,25 @@ func (m *model) updateReviewProgressPanel() tea.Cmd {
 	if m.reviewStackDenominator != 0 {
 		percent = 1 - float64(len(m.reviewStack))/float64(m.reviewStackDenominator)
 	}
-	return m.reviewProgressPanel.SetPercent(percent)
+	return m.panels.reviewProgressPanel.SetPercent(percent)
 }
 
 func (m *model) addContextStack(id string) (tea.Model, tea.Cmd) {
-	index := findIndex(m.list.Items(), id)
+	index := findIndex(m.panels.itemListPanel.Items(), id)
 	if index == -1 {
 		return *m, nil
 	}
-	item := m.list.Items()[index]
+	item := m.panels.itemListPanel.Items()[index]
 
-	contextList := m.contextPanel.Items()
+	contextList := m.panels.contextListPanel.Items()
 	contextList = append(contextList, item)
-	m.contextPanel.SetItems(contextList)
+	m.panels.contextListPanel.SetItems(contextList)
 	return *m, nil
 }
 
 func (m *model) removeContextStack(id string) (tea.Model, tea.Cmd) {
-	index := findIndex(m.contextPanel.Items(), id)
-	contextList := m.contextPanel.Items()
+	index := findIndex(m.panels.contextListPanel.Items(), id)
+	contextList := m.panels.contextListPanel.Items()
 
 	if index < 0 || index >= len(contextList) {
 		return *m, nil
@@ -368,12 +288,12 @@ func (m *model) removeContextStack(id string) (tea.Model, tea.Cmd) {
 		newContextList = append(contextList[:index], contextList[index+1:]...)
 	}
 
-	m.contextPanel.SetItems(newContextList)
+	m.panels.contextListPanel.SetItems(newContextList)
 	return *m, nil
 }
 
 func (m *model) changeItemTitlePrefix(index int, prefix string) {
-	item := m.list.Items()[index].(listItem)
+	item := m.panels.itemListPanel.Items()[index].(listItem)
 	item.title = replacePrefix(item.title, prefix)
-	m.list.SetItem(index, item)
+	m.panels.itemListPanel.SetItem(index, item)
 }

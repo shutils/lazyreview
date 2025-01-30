@@ -7,11 +7,6 @@ const (
 	RemoveContext
 )
 
-type aiContextMsg struct {
-	method AiContextMethod
-	id     string
-}
-
 type updateFocusPanelMsg struct {
 	target FocusState
 }

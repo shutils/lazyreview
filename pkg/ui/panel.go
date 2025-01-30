@@ -5,6 +5,11 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/bubbles/help"
+	"github.com/charmbracelet/bubbles/list"
+	"github.com/charmbracelet/bubbles/progress"
+	"github.com/charmbracelet/bubbles/spinner"
+	"github.com/charmbracelet/bubbles/textarea"
+	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/glamour"
 	"github.com/charmbracelet/lipgloss"
@@ -13,6 +18,70 @@ import (
 
 type ZoomState int
 type FocusState int
+
+type panels struct {
+	itemListPanel       list.Model
+	itemPreviewPanel    viewport.Model
+	itemReviewPanel     viewport.Model
+	stateSummaryPanel   viewport.Model
+	stateDetailPanel    viewport.Model
+	configSummaryPanel  viewport.Model
+	configDetailPanel   viewport.Model
+	reviewProgressPanel progress.Model
+	reviewStackPanel    viewport.Model
+	sourceListPanel     list.Model
+	sourceDetailPanel   viewport.Model
+	contextListPanel    list.Model
+	contextDetailPanel  viewport.Model
+	promptPanel         textarea.Model
+	spinner             spinner.Model
+}
+
+func NewPanels() panels {
+	p := panels{
+		itemListPanel:       list.New([]list.Item{}, list.NewDefaultDelegate(), 0, 0),
+		itemPreviewPanel:    viewport.New(0, 0),
+		itemReviewPanel:     viewport.New(0, 0),
+		stateSummaryPanel:   viewport.New(0, 0),
+		stateDetailPanel:    viewport.New(0, 0),
+		configSummaryPanel:  viewport.New(0, 0),
+		configDetailPanel:   viewport.New(0, 0),
+		reviewProgressPanel: progress.New(),
+		reviewStackPanel:    viewport.New(0, 0),
+		sourceListPanel:     list.New([]list.Item{}, list.NewDefaultDelegate(), 0, 0),
+		sourceDetailPanel:   viewport.New(0, 0),
+		contextListPanel:    list.New([]list.Item{}, list.NewDefaultDelegate(), 0, 0),
+		contextDetailPanel:  viewport.New(0, 0),
+		promptPanel:         textarea.New(),
+		spinner:             spinner.New(),
+	}
+
+	p.setInitSetting()
+	return p
+}
+
+func (p *panels) setInitSetting() {
+	p.sourceListPanel = setListInitSetting(p.sourceListPanel)
+	p.contextListPanel = setListInitSetting(p.contextListPanel)
+
+	p.itemListPanel.SetShowHelp(false)
+	p.itemListPanel.SetShowTitle(false)
+	p.itemListPanel.KeyMap.Quit.Unbind()
+}
+
+func setListInitSetting(l list.Model) list.Model {
+	l.SetDelegate(list.DefaultDelegate{
+		ShowDescription: false,
+		Styles:          list.NewDefaultItemStyles(),
+	})
+	l.SetShowTitle(false)
+	l.SetShowHelp(false)
+	l.SetShowStatusBar(false)
+	l.SetShowFilter(false)
+	l.KeyMap.Quit.Unbind()
+	l.KeyMap.Filter.Unbind()
+	return l
+}
 
 const (
 	Normal ZoomState = iota
@@ -124,27 +193,27 @@ func (m *model) makeView() string {
 
 	state := "/"
 	if m.reviewState == Reviewing {
-		state = m.spinner.View()
+		state = m.panels.spinner.View()
 	}
 
 	helpModel := help.New()
-	globalHelp := helpModel.View(m.globalKeyMap)
+	globalHelp := helpModel.View(m.keyMaps.globalKeyMap)
 	helpString := m.getHelpString(helpModel, globalHelp)
 
-	listPanel := m.buildPanel(m.list.View(), m.getPanelStyle(ListPanelFocus), m.list.Width(), m.list.Height(), "List")
-	contentPanel := m.buildPanel(m.contentPanel.View(), m.getPanelStyle(ContentPanelFocus), m.contentPanel.Width, m.contentPanel.Height, "Content")
-	reviewPanel := m.buildPanel(m.reviewPanel.View(), m.getPanelStyle(ReviewPanelFocus), m.reviewPanel.Width, m.reviewPanel.Height, "Review")
-	reviewStackPanel := m.buildPanel(m.reviewStackPanel.View(), m.getPanelStyle(Other), m.reviewStackPanel.Width, m.reviewStackPanel.Height, "Review stack")
-	configPanel := m.buildPanel(m.configSummaryPanel.View(), m.getPanelStyle(ConfigSummaryPanelFocus), m.configSummaryPanel.Width, m.configSummaryPanel.Height, "Config")
-	configContentPanel := m.buildPanel(m.configContentPanel.View(), m.getPanelStyle(Other), m.configContentPanel.Width, m.configContentPanel.Height, "Config content")
-	statePanel := m.buildPanel(m.statePanel.View(), m.getPanelStyle(StatePanelFocus), m.statePanel.Width, m.statePanel.Height, "State")
-	stateDetailPanel := m.buildPanel(m.stateDetailPanel.View(), m.getPanelStyle(Other), m.stateDetailPanel.Width, m.stateDetailPanel.Height, "State detail")
-	instantPromptPanel := m.buildPanel(m.instantPromptPanel.View(), m.getPanelStyle(InstantPromptPanelFocus), m.panelSize.secondlyPanelWidth, instantPromptPanelHeight, "Instant prompt")
-	contextPanel := m.buildPanel(m.contextPanel.View(), m.getPanelStyle(ContextPanelFocus), m.contextPanel.Width(), m.contextPanel.Height(), "Context")
-	sourceListPanel := m.buildPanel(m.sourceListPanel.View(), m.getPanelStyle(SourceListPanelFocus), m.sourceListPanel.Width(), m.sourceListPanel.Height(), "Source list")
-	sourceDetailPanel := m.buildPanel(m.sourceDetailPanel.View(), m.getPanelStyle(Other), m.sourceDetailPanel.Width, m.sourceDetailPanel.Height, "Source detail")
-	contextDetailPanel := m.buildPanel(m.contextDetailPanel.View(), m.getPanelStyle(Other), m.contextDetailPanel.Width, m.contextDetailPanel.Height, "Context detail")
-	reviewProgressPanel := m.buildPanel(m.reviewProgressPanel.View(), m.getPanelStyle(ReviewStackProgressPanelFocus), m.reviewProgressPanel.Width, 1, "Review progress")
+	listPanel := m.buildPanel(m.panels.itemListPanel.View(), m.getPanelStyle(ListPanelFocus), m.panels.itemListPanel.Width(), m.panels.itemListPanel.Height(), "List")
+	contentPanel := m.buildPanel(m.panels.itemPreviewPanel.View(), m.getPanelStyle(ContentPanelFocus), m.panels.itemPreviewPanel.Width, m.panels.itemPreviewPanel.Height, "Content")
+	reviewPanel := m.buildPanel(m.panels.itemReviewPanel.View(), m.getPanelStyle(ReviewPanelFocus), m.panels.itemReviewPanel.Width, m.panels.itemReviewPanel.Height, "Review")
+	reviewStackPanel := m.buildPanel(m.panels.reviewStackPanel.View(), m.getPanelStyle(Other), m.panels.reviewStackPanel.Width, m.panels.reviewStackPanel.Height, "Review stack")
+	configPanel := m.buildPanel(m.panels.configSummaryPanel.View(), m.getPanelStyle(ConfigSummaryPanelFocus), m.panels.configSummaryPanel.Width, m.panels.configSummaryPanel.Height, "Config")
+	configContentPanel := m.buildPanel(m.panels.configDetailPanel.View(), m.getPanelStyle(Other), m.panels.configDetailPanel.Width, m.panels.configDetailPanel.Height, "Config content")
+	statePanel := m.buildPanel(m.panels.stateSummaryPanel.View(), m.getPanelStyle(StatePanelFocus), m.panels.stateSummaryPanel.Width, m.panels.stateSummaryPanel.Height, "State")
+	stateDetailPanel := m.buildPanel(m.panels.stateDetailPanel.View(), m.getPanelStyle(Other), m.panels.stateDetailPanel.Width, m.panels.stateDetailPanel.Height, "State detail")
+	instantPromptPanel := m.buildPanel(m.panels.promptPanel.View(), m.getPanelStyle(InstantPromptPanelFocus), m.panelSize.secondlyPanelWidth, instantPromptPanelHeight, "Instant prompt")
+	contextPanel := m.buildPanel(m.panels.contextListPanel.View(), m.getPanelStyle(ContextPanelFocus), m.panels.contextListPanel.Width(), m.panels.contextListPanel.Height(), "Context")
+	sourceListPanel := m.buildPanel(m.panels.sourceListPanel.View(), m.getPanelStyle(SourceListPanelFocus), m.panels.sourceListPanel.Width(), m.panels.sourceListPanel.Height(), "Source list")
+	sourceDetailPanel := m.buildPanel(m.panels.sourceDetailPanel.View(), m.getPanelStyle(Other), m.panels.sourceDetailPanel.Width, m.panels.sourceDetailPanel.Height, "Source detail")
+	contextDetailPanel := m.buildPanel(m.panels.contextDetailPanel.View(), m.getPanelStyle(Other), m.panels.contextDetailPanel.Width, m.panels.contextDetailPanel.Height, "Context detail")
+	reviewProgressPanel := m.buildPanel(m.panels.reviewProgressPanel.View(), m.getPanelStyle(ReviewStackProgressPanelFocus), m.panels.reviewProgressPanel.Width, 1, "Review progress")
 
 	primaryPanels := m.buildPrimaryPanels(statePanel, listPanel, reviewProgressPanel, contextPanel, sourceListPanel, configPanel)
 	reviewCombiPanels := m.buildReviewCombiPanels(contentPanel, reviewPanel, instantPromptPanel)
@@ -158,23 +227,23 @@ func (m *model) makeView() string {
 func (m *model) getHelpString(helpModel help.Model, globalHelp string) string {
 	switch m.focusState {
 	case ListPanelFocus:
-		return MakeBottomLine(globalHelp, helpModel.View(m.listKeyMap))
+		return MakeBottomLine(globalHelp, helpModel.View(m.keyMaps.listKeyMap))
 	case ContentPanelFocus:
-		return MakeBottomLine(globalHelp, helpModel.View(m.contentKeyMap))
+		return MakeBottomLine(globalHelp, helpModel.View(m.keyMaps.contentKeyMap))
 	case ReviewPanelFocus:
-		return MakeBottomLine(globalHelp, helpModel.View(m.reviewKeyMap))
+		return MakeBottomLine(globalHelp, helpModel.View(m.keyMaps.reviewKeyMap))
 	case ReviewStackProgressPanelFocus:
-		return MakeBottomLine(globalHelp, helpModel.View(m.reviewStackKeyMap))
+		return MakeBottomLine(globalHelp, helpModel.View(m.keyMaps.reviewStackKeyMap))
 	case InstantPromptPanelFocus:
-		return MakeBottomLine(globalHelp, helpModel.View(m.promptKeyMap))
+		return MakeBottomLine(globalHelp, helpModel.View(m.keyMaps.promptKeyMap))
 	case ConfigSummaryPanelFocus:
-		return MakeBottomLine(globalHelp, helpModel.View(m.configSummaryKeyMap))
+		return MakeBottomLine(globalHelp, helpModel.View(m.keyMaps.configSummaryKeyMap))
 	case StatePanelFocus:
-		return MakeBottomLine(globalHelp, helpModel.View(m.stateKeyMap))
+		return MakeBottomLine(globalHelp, helpModel.View(m.keyMaps.stateKeyMap))
 	case ContextPanelFocus:
-		return MakeBottomLine(globalHelp, helpModel.View(m.contextKeyMap))
+		return MakeBottomLine(globalHelp, helpModel.View(m.keyMaps.contextKeyMap))
 	case SourceListPanelFocus:
-		return MakeBottomLine(globalHelp, helpModel.View(m.sourceListKeyMap))
+		return MakeBottomLine(globalHelp, helpModel.View(m.keyMaps.sourceListKeyMap))
 	default:
 		return ""
 	}
@@ -266,14 +335,14 @@ func (m *model) setPrimaryPanelSizes() {
 	listPanelHeight := m.winSize.height - stateSummaryPanelOuterHeight - reviewProgresPanelOuterHeight - contextPanelOuterHeight - configSummaryPanelOuterHeight - footerHeight - borderHeight*2 - sourceListPanelHeight - borderHeight*2
 	primaryAreaWidth, _ := m.calcAreaSize()
 
-	m.list.SetSize(primaryAreaWidth-borderWidth*2, listPanelHeight)
-	m.configSummaryPanel.Width = primaryAreaWidth - borderWidth*2
-	m.configSummaryPanel.Height = configSummaryPanelHeight
-	m.reviewProgressPanel.Width = primaryAreaWidth - borderWidth*2
-	m.statePanel.Width = primaryAreaWidth - borderWidth*2
-	m.statePanel.Height = stateSummaryPanelHeight
-	m.contextPanel.SetSize(primaryAreaWidth-borderWidth*2, contextPanelHeight)
-	m.sourceListPanel.SetSize(primaryAreaWidth-borderWidth*2, sourceListPanelHeight)
+	m.panels.itemListPanel.SetSize(primaryAreaWidth-borderWidth*2, listPanelHeight)
+	m.panels.configSummaryPanel.Width = primaryAreaWidth - borderWidth*2
+	m.panels.configSummaryPanel.Height = configSummaryPanelHeight
+	m.panels.reviewProgressPanel.Width = primaryAreaWidth - borderWidth*2
+	m.panels.stateSummaryPanel.Width = primaryAreaWidth - borderWidth*2
+	m.panels.stateSummaryPanel.Height = stateSummaryPanelHeight
+	m.panels.contextListPanel.SetSize(primaryAreaWidth-borderWidth*2, contextPanelHeight)
+	m.panels.sourceListPanel.SetSize(primaryAreaWidth-borderWidth*2, sourceListPanelHeight)
 }
 
 func (m *model) setSecondaryPanelSizes() {
@@ -294,29 +363,29 @@ func (m *model) setSecondaryPanelSizes() {
 	}
 	m.panelSize.itemReviewPanelWidth = secondlyAreaWidth - m.panelSize.itemPreviewPanelWidth
 
-	m.contentPanel.Width = m.panelSize.itemPreviewPanelWidth - borderWidth*2
-	m.contentPanel.Height = m.winSize.height - instantPromptPanelOuterHeight - borderHeight*2 - footerHeight
+	m.panels.itemPreviewPanel.Width = m.panelSize.itemPreviewPanelWidth - borderWidth*2
+	m.panels.itemPreviewPanel.Height = m.winSize.height - instantPromptPanelOuterHeight - borderHeight*2 - footerHeight
 
-	m.configContentPanel.Width = secondlyAreaWidth - borderWidth*2
-	m.configContentPanel.Height = m.winSize.height - borderHeight*2 - footerHeight
+	m.panels.configDetailPanel.Width = secondlyAreaWidth - borderWidth*2
+	m.panels.configDetailPanel.Height = m.winSize.height - borderHeight*2 - footerHeight
 
-	m.reviewPanel.Width = m.panelSize.itemReviewPanelWidth - borderWidth*2
-	m.reviewPanel.Height = m.winSize.height - instantPromptPanelOuterHeight - borderHeight*2 - footerHeight
+	m.panels.itemReviewPanel.Width = m.panelSize.itemReviewPanelWidth - borderWidth*2
+	m.panels.itemReviewPanel.Height = m.winSize.height - instantPromptPanelOuterHeight - borderHeight*2 - footerHeight
 
-	m.instantPromptPanel.SetWidth(secondlyAreaWidth - borderWidth*2)
-	m.instantPromptPanel.SetHeight(instantPromptPanelHeight)
+	m.panels.promptPanel.SetWidth(secondlyAreaWidth - borderWidth*2)
+	m.panels.promptPanel.SetHeight(instantPromptPanelHeight)
 
-	m.reviewStackPanel.Width = secondlyAreaWidth - borderWidth*2
-	m.reviewStackPanel.Height = m.winSize.height - borderHeight*2 - footerHeight
+	m.panels.reviewStackPanel.Width = secondlyAreaWidth - borderWidth*2
+	m.panels.reviewStackPanel.Height = m.winSize.height - borderHeight*2 - footerHeight
 
-	m.stateDetailPanel.Width = secondlyAreaWidth - borderWidth*2
-	m.stateDetailPanel.Height = m.winSize.height - borderHeight*2 - footerHeight
+	m.panels.stateDetailPanel.Width = secondlyAreaWidth - borderWidth*2
+	m.panels.stateDetailPanel.Height = m.winSize.height - borderHeight*2 - footerHeight
 
-	m.sourceDetailPanel.Width = secondlyAreaWidth - borderWidth*2
-	m.sourceDetailPanel.Height = m.winSize.height - borderHeight*2 - footerHeight
+	m.panels.sourceDetailPanel.Width = secondlyAreaWidth - borderWidth*2
+	m.panels.sourceDetailPanel.Height = m.winSize.height - borderHeight*2 - footerHeight
 
-	m.contextDetailPanel.Width = secondlyAreaWidth - borderWidth*2
-	m.contextDetailPanel.Height = m.winSize.height - borderHeight*2 - footerHeight
+	m.panels.contextDetailPanel.Width = secondlyAreaWidth - borderWidth*2
+	m.panels.contextDetailPanel.Height = m.winSize.height - borderHeight*2 - footerHeight
 }
 
 func (m *model) buildPrimaryPanels(statePanel, listPanel, reviewStackPanel, contextPanel, sourceListPanel, configPanel string) string {
