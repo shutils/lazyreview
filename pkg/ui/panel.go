@@ -389,7 +389,7 @@ func (m *model) setSecondaryPanelSizes() {
 }
 
 func (m *model) buildPrimaryPanels(statePanel, listPanel, reviewStackPanel, contextPanel, sourceListPanel, configPanel string) string {
-	return lipgloss.JoinVertical(lipgloss.Top, statePanel, listPanel, reviewStackPanel, contextPanel, sourceListPanel, configPanel)
+	return lipgloss.JoinVertical(lipgloss.Top, statePanel, listPanel, contextPanel, sourceListPanel, configPanel, reviewStackPanel)
 }
 
 func (m *model) buildReviewCombiPanels(contentPanel, reviewPanel, instantPromptPanel string) string {

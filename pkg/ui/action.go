@@ -134,7 +134,7 @@ func (m *model) focusPanel(panel FocusState) (tea.Model, tea.Cmd) {
 	return *m, cmd
 }
 
-func (m *model) FocusListPanel() (tea.Model, tea.Cmd) {
+func (m *model) FocusItemListPanel() (tea.Model, tea.Cmd) {
 	return m.focusPanel(ListPanelFocus)
 }
 
@@ -146,7 +146,7 @@ func (m *model) FocusReviewPanel() (tea.Model, tea.Cmd) {
 	return m.focusPanel(ReviewPanelFocus)
 }
 
-func (m *model) FocusReviewStackPanel() (tea.Model, tea.Cmd) {
+func (m *model) FocusReviewProgressPanel() (tea.Model, tea.Cmd) {
 	return m.focusPanel(ReviewStackProgressPanelFocus)
 }
 
@@ -158,7 +158,7 @@ func (m *model) FocusConfigSummaryPanel() (tea.Model, tea.Cmd) {
 	return m.focusPanel(ConfigSummaryPanelFocus)
 }
 
-func (m *model) FocusStatePanel() (tea.Model, tea.Cmd) {
+func (m *model) FocusStateSummaryPanel() (tea.Model, tea.Cmd) {
 	return m.focusPanel(StatePanelFocus)
 }
 
