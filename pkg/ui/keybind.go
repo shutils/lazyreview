@@ -123,6 +123,7 @@ type listKeyMap struct {
 	ReviewContentHalfViewUp   key.Binding
 	OpenReview                key.Binding
 	ToggleAiContext           key.Binding
+	DeleteReviewResult        key.Binding
 }
 
 func (k listKeyMap) ShortHelp() []key.Binding {
@@ -138,6 +139,7 @@ func (k listKeyMap) ShortHelp() []key.Binding {
 		k.FocusInstantPrompt,
 		k.OpenReview,
 		k.ToggleAiContext,
+		k.DeleteReviewResult,
 		// k.ReviewContentCursorDown,
 		// k.ReviewContentCursorUp,
 		// k.ReviewContentHalfViewDown,
@@ -157,6 +159,7 @@ func (k listKeyMap) FullHelp() [][]key.Binding {
 			k.FocusStatePanel,
 			k.FocusContextListPanel,
 			k.OpenReview,
+			k.DeleteReviewResult,
 			// k.ReviewContentCursorDown,
 			// k.ReviewContentCursorUp,
 			// k.ReviewContentHalfViewDown,
@@ -225,6 +228,10 @@ var ListKeyMap = listKeyMap{
 	ToggleAiContext: key.NewBinding(
 		key.WithKeys("a"),
 		key.WithHelp("a", "add context"),
+	),
+	DeleteReviewResult: key.NewBinding(
+		key.WithKeys("d"),
+		key.WithHelp("d", "delete review"),
 	),
 }
 
@@ -683,6 +690,8 @@ func (m *model) handleItemListKey(msg tea.Msg) func() (tea.Model, tea.Cmd) {
 			return m.OpenCurrentReview
 		case key.Matches(msg, m.keyMaps.listKeyMap.ToggleAiContext):
 			return m.ToggleAiContext
+		case key.Matches(msg, m.keyMaps.listKeyMap.DeleteReviewResult):
+			return m.DeleteReviewResult
 		}
 	}
 	return nil

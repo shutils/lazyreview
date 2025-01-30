@@ -159,3 +159,17 @@ func (m *model) getContextString() string {
 	}
 	return strings.Join(contextItems, "\n\n")
 }
+
+func (m *model) deleteReview(reviewID string) tea.Cmd {
+	index := m.getReviewIndex(reviewID)
+	if index == -1 {
+		return func() tea.Msg {
+			return SendErrorMessage(fmt.Sprintf("Review with ID %s not found", reviewID), nil)
+		}
+	}
+
+	m.reviewList = append(m.reviewList[:index], m.reviewList[index+1:]...)
+
+	m.saveReviews()
+	return nil
+}
