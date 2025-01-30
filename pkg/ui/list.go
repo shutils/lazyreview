@@ -10,11 +10,11 @@ import (
 )
 
 func (m *model) onChangeListSelectedItem() (tea.Model, tea.Cmd) {
-	selectedItem, ok := m.list.SelectedItem().(listItem)
+	selectedItem, ok := m.panels.itemListPanel.SelectedItem().(listItem)
 	reviewContent := "No review"
 	itemContent := previewContent(selectedItem, m.conf.Sources)
 	if ok && m.getReviewIndex(selectedItem.id) != -1 {
-		reviewContent = getRendered(m.reviewList[m.getReviewIndex(selectedItem.id)].Review, m.conf.Glamour, m.reviewPanel.Width)
+		reviewContent = getRendered(m.reviewList[m.getReviewIndex(selectedItem.id)].Review, m.conf.Glamour, m.panels.itemReviewPanel.Width)
 	}
 	m.loadReviewPanel(reviewContent)
 	m.loadContentPanel(itemContent)
@@ -22,13 +22,13 @@ func (m *model) onChangeListSelectedItem() (tea.Model, tea.Cmd) {
 }
 
 func (m *model) loadReviewPanel(itemContent string) {
-	m.reviewPanel.SetContent(itemContent)
-	m.reviewPanel.GotoTop()
+	m.panels.itemReviewPanel.SetContent(itemContent)
+	m.panels.itemReviewPanel.GotoTop()
 }
 
 func (m *model) loadContentPanel(itemContent string) {
-	m.contentPanel.SetContent(itemContent)
-	m.contentPanel.GotoTop()
+	m.panels.itemPreviewPanel.SetContent(itemContent)
+	m.panels.itemPreviewPanel.GotoTop()
 }
 
 // Returns a index of the item with the given param
