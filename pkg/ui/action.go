@@ -147,7 +147,7 @@ func (m *model) FocusReviewPanel() (tea.Model, tea.Cmd) {
 }
 
 func (m *model) FocusReviewStackPanel() (tea.Model, tea.Cmd) {
-	return m.focusPanel(ReviewStackPanelFocus)
+	return m.focusPanel(ReviewStackProgressPanelFocus)
 }
 
 func (m *model) FocusInstantPromptPanel() (tea.Model, tea.Cmd) {
