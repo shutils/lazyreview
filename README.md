@@ -1,49 +1,46 @@
 # lazyreview
-Terminal UI for code review with ai
+
+A terminal-based application for AI-assisted code review.
 
 ## Description
 
-`lazyreview` is a code review tool that uses GPT-4o to generate code reviews.
+`lazyreview` generates code reviews using AI models like GPT-4o. By configuring the source, you can collect various contexts for review execution.
 
-## Image
-
-![image](https://private-user-images.githubusercontent.com/100141359/405655010-246c98b7-f4fa-42b3-b3e2-06830aa42539.PNG?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3Mzc1NTU5NzMsIm5iZiI6MTczNzU1NTY3MywicGF0aCI6Ii8xMDAxNDEzNTkvNDA1NjU1MDEwLTI0NmM5OGI3LWY0ZmEtNDJiMy1iM2UyLTA2ODMwYWE0MjUzOS5QTkc_WC1BbXotQWxnb3JpdGhtPUFXUzQtSE1BQy1TSEEyNTYmWC1BbXotQ3JlZGVudGlhbD1BS0lBVkNPRFlMU0E1M1BRSzRaQSUyRjIwMjUwMTIyJTJGdXMtZWFzdC0xJTJGczMlMkZhd3M0X3JlcXVlc3QmWC1BbXotRGF0ZT0yMDI1MDEyMlQxNDIxMTNaJlgtQW16LUV4cGlyZXM9MzAwJlgtQW16LVNpZ25hdHVyZT05YzdhNzc3MmRiY2U3OWRkNGFiMmNlMGUzMmMxOTUwMjVkYTE5NjJlYTNkN2VkYzM1ZmU4MjJhMjFmNWM4ZTI4JlgtQW16LVNpZ25lZEhlYWRlcnM9aG9zdCJ9.KNTP2O5jrDyt33JKyKA5xvi7JeBJMm7G5xxsQsilKNo)
+![image](docs/assets/images/application_top.PNG)
 
 ## Installation
+
+Currently, installation is only supported for Go.
 
 ```sh
 go install github.com/shutils/lazyreview@latest
 ```
 
-If you want use unstable version, run the following command:
+If you want to use the latest development version, run the following command:
 
 ```sh
 go install github.com/shutils/lazyreview@dev
 ```
 
-## Usage
+## Configuration
 
-### Commands
+This application is configured with a TOML file.
 
-```sh
-lazyreview --config <config-file>
-```
+For example:
 
-### Configuration
-
-This application is configured with a toml file.
-
-for example:
+<details><summary>config.toml</summary><div>
 
 ```toml
-type = "azure"
-key = "<your-key>"
-endpoint = "<your-endpoint>"
-version = "<your-version>"
-model = "<your-model>"
-target = "."
-output = "__dev/reviews.json"
-ignores = [".git"]
+type = "azure" # "openai" or "azure". If not set, "openai" is used.
+key = "<your-key>" # API key to use.
+endpoint = "<your-endpoint>" # AI endpoint. Required only when type is "azure".
+version = "<your-version>"  # AI version to use. Required only when type is "azure".
+model = "<your-model>" # Model to use. Defaults to "gpt-4o-mini".
+target = "." # Target directory when collecting items. Used if collector is not set.
+output = "reviews.json" # File to output review results. If not set, output follows XDG specifications.
+ignores = [".git"] # Default filters for collected items.
+
+# Prompt for AI. Used only if instant or source-specific prompts are not specified.
 prompt = '''
 You are a code reviewer. Please review the user's code based on the following points.
 
@@ -57,92 +54,51 @@ You are a code reviewer. Please review the user's code based on the following po
 
 Please provide appropriate suggestions in Markdown format when answering.
 '''
-max_tokens = 4000
-glamour = "dark"
-# collector = "git diff --name-only"
-# previewer = "git diff --unified=20"
-# opener = "code"
+max_tokens = 2000 # Maximum tokens allowed for AI.
+glamour = "dark" # Display style for review results. Currently supports "dark", "light", "".
+opener = "nvim" # Command used to open reviews or input prompts.
 
 [modelCost]
-input = 0.00000015
-output = 0.0000006
+input = 0.15 # $ per 1M tokens
+output = 0.6 # $ per 1M tokens
+
+# Source settings for collecting items.
+[[sources]]
+name = "git diff" # Unique name.
+enabled = false # Whether to use this source. Can be toggled via TUI.
+collector = "git diff --name-only" # Command to collect items. Output is converted into items line by line.
+previewer = "git diff" # Command to preview items.
+
+[[sources]]
+name = "git diff staged"
+enabled = false
+collector = "git diff --name-only --cached"
+previewer = "git diff --staged"
+
+[[sources]]
+name = "grep main.go"
+enabled = false
+collector = ["sh", "-c", "ls | grep main.go"] # Commands can be passed as an array. Use this format for piping.
+previewer = "cat"
+
+[[sources]]
+name = "docker ps"
+enabled = false
+collector = 'docker ps --format "{{.Names}}"' # Retrieve only names.
+previewer = "docker logs"
+```
+</div></details>
+
+## Usage
+
+```sh
+lazyreview [--config <config-file>]
 ```
 
-#### type
+If no config file is specified, a file will be generated following XDG specifications.
 
-The type field specifies the type of endpoint. Currently, `azure` and `openai` are supported.
-If you set the type to `azure`, you must provide the `key`, `endpoint`, `version`, and `model` fields.
-If you want to use the `openai` endpoint, you must provide the `key` and `model` fields.
+## Example
 
-#### key
+- git diff
+  ![image](docs/assets/images/git_diff_summary.PNG)
 
-The key field is the API key for the endpoint.
-
-#### endpoint
-
-The endpoint field is the endpoint for the API.
-
-#### version
-
-The version field is the deployments version of the model.
-
-#### model
-
-The model field is the model name.
-for example, `gpt-4o-mini`
-
-#### target
-
-The target field is the target directory to review.
-
-#### output
-
-The output field is the output file to save the reviews.
-
-#### ignores
-
-The ignores field is the list of directories to ignore.
-
-#### prompt
-
-The prompt field is the prompt to use for the model.
-If you not provide the prompt field, the default prompt will be used.
-
-#### max_tokens
-
-The max_tokens field is the maximum number of tokens to use for the model.
-
-#### glamour
-
-The glamour field is the glamour style to use for the output.
-for example, `dark` or `light`
-
-If you not provide the glamour field, the output will be plain text.
-
-#### collector (Experimental)
-
-The collector field is the command to use to collect the items to review.
-for example, `git diff --name-only`
-
-If you not provide the collector field, all files under the target will be reviewed.
-
-#### previewer (Experimental)
-
-The previewer field is the previewer to use for the output.
-for example, `git diff --unified=20`
-
-If you not provide the previewer field, the output will be plain text.
-
-#### opener (Experimental)
-
-Setting the opener field will allow you to open the selected review in an editor of your choice.
-
-#### modelCost
-
-The `modelCost` section allows you to specify the cost associated with using the GPT-4o model. This is particularly useful for tracking and managing expenses related to API usage. 
-
-##### Parameters
-
-- **input**: This parameter indicates the cost per input token processed by the model. In this case, it is set to `0.00000015` USD. This value helps you estimate the total cost incurred based on the number of tokens in the input you provide for reviews.
-
-- **output**: This parameter indicates the cost per output token generated by the model. It is set to `0.0000006` USD. This value will help you predict the overall expense based on the number of tokens generated in response to your prompts.
