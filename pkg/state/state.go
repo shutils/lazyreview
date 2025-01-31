@@ -23,7 +23,9 @@ func (s *State) ShowUsage(cost config.ModelCost) string {
 	if cost.Input == 0 || cost.Output == 0 {
 		return ""
 	}
-	return "Cost: $" + strconv.FormatFloat(float64(s.Usage.PromptTokens)*(cost.Input)+float64(s.Usage.CompletionTokens)*(cost.Output), 'f', -1, 64)
+	inputCost := float64(s.Usage.PromptTokens) * (cost.Input) / 1000_000
+	outputCost := float64(s.Usage.CompletionTokens) * (cost.Output) / 1000_000
+	return "Cost: $" + strconv.FormatFloat(inputCost+outputCost, 'f', -1, 64)
 }
 
 func (s *State) ShowUsedToken() string {

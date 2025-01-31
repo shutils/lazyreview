@@ -30,7 +30,7 @@ func defaultItemCollector(conf config.Config) []list.Item {
 					return nil
 				}
 			}
-			items = append(items, listItem{title: d.Name(), param: path})
+			items = append(items, listItem{title: d.Name(), param: path, sourceName: ""})
 		}
 		return nil
 	})
@@ -40,11 +40,13 @@ func defaultItemCollector(conf config.Config) []list.Item {
 	return items
 }
 
-func customCollector(conf config.Config) []list.Item {
+func customCollector(cmds []string, sourceName string) []list.Item {
+	if len(cmds) == 0 {
+		return []list.Item{}
+	}
 	items := []list.Item{}
-	cmdArray := strings.Split(conf.Collector, " ")
-	args := cmdArray[1:]
-	cmd := exec.Command(cmdArray[0], args...)
+	args := cmds[1:]
+	cmd := exec.Command(cmds[0], args...)
 
 	var stdout bytes.Buffer
 	cmd.Stdout = &stdout
@@ -55,9 +57,13 @@ func customCollector(conf config.Config) []list.Item {
 	}
 
 	output := stdout.String()
+	if output == "" {
+		return []list.Item{}
+	}
+
 	paramStrings := strings.Split(strings.TrimSpace(output), "\n")
 	for _, param := range paramStrings {
-		items = append(items, listItem{title: filepath.Base(param), param: param})
+		items = append(items, listItem{title: filepath.Base(param), param: param, sourceName: sourceName})
 	}
 	return items
 }
