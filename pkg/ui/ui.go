@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/list"
@@ -190,6 +191,17 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.focusState = MessagePanelFocus
 		}
 		return m, nil
+	case setPromptMsg:
+		m.panels.promptPanel.SetValue(msg.text)
+		return m, nil
+	case closedEditorMsg:
+		if msg.err != nil {
+			return m, func() tea.Msg {
+				return showMessageMsg{
+					message: fmt.Sprintf("err: \n\n%s", msg.err.Error()),
+				}
+			}
+		}
 	default:
 		switch m.focusState {
 		case SourceListPanelFocus:

@@ -13,6 +13,12 @@ import (
 	"github.com/adrg/xdg"
 )
 
+// Tmp file name
+const (
+	tmpReviewFileName = "tmp_review.md"
+	tmpPromptFileName = "tmp_prompt.md"
+)
+
 // ModelCost represents the cost associated with AI model usage.
 type ModelCost struct {
 	Input, Output float64
@@ -81,9 +87,10 @@ type Config struct {
 	Previewer     StringOrSlice `toml:"previewer"`
 	Glamour       string        `toml:"glamour"`
 	MaxTokens     int           `toml:"max_tokens"`
-	TmpReviewPath string        `toml:"-"`
 	Opener        string        `toml:"opener"`
 	Sources       []Source      `toml:"sources"`
+	TmpReviewPath string        `toml:"-"`
+	TmpPromptPath string        `toml:"-"`
 }
 
 // loadConfig reads the configuration from the specified file.
@@ -123,7 +130,8 @@ func NewConfig() Config {
 	validateConfig(&c)
 
 	c.State = setDefaultState(c.State)
-	c.TmpReviewPath = path.Join(xdg.CacheHome, projectName, "tmp_review.md")
+	c.TmpReviewPath = path.Join(xdg.CacheHome, projectName, tmpReviewFileName)
+	c.TmpPromptPath = path.Join(xdg.CacheHome, projectName, tmpPromptFileName)
 
 	return c
 }

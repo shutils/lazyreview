@@ -17,6 +17,14 @@ type updateFocusPanelMsg struct {
 	target FocusState
 }
 
+type closedEditorMsg struct {
+	err error
+}
+
+type setPromptMsg struct {
+	text string
+}
+
 type showMessageMsg struct {
 	message string
 }

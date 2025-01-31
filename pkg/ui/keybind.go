@@ -420,15 +420,16 @@ type promptKeyMap struct {
 	InstantPromptHistoryPrev key.Binding
 	InstantPromptHistoryNext key.Binding
 	ReviewStack              key.Binding
+	OpenEditor               key.Binding
 }
 
 func (k promptKeyMap) ShortHelp() []key.Binding {
-	return []key.Binding{k.Blur, k.InstantPromptHistoryPrev, k.InstantPromptHistoryNext, k.ReviewStack}
+	return []key.Binding{k.Blur, k.InstantPromptHistoryPrev, k.InstantPromptHistoryNext, k.ReviewStack, k.OpenEditor}
 }
 
 func (k promptKeyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{
-		{k.Blur, k.InstantPromptHistoryPrev, k.InstantPromptHistoryNext, k.ReviewStack},
+		{k.Blur, k.InstantPromptHistoryPrev, k.InstantPromptHistoryNext, k.ReviewStack, k.OpenEditor},
 	}
 }
 
@@ -448,6 +449,10 @@ var PromptKeyMap = promptKeyMap{
 	ReviewStack: key.NewBinding(
 		key.WithKeys("ctrl+s"),
 		key.WithHelp("ctrl+s", "review"),
+	),
+	OpenEditor: key.NewBinding(
+		key.WithKeys("ctrl+e"),
+		key.WithHelp("ctrl+e", "edit with editor"),
 	),
 }
 
@@ -772,6 +777,8 @@ func (m *model) handlePromptKey(msg tea.Msg) func() (tea.Model, tea.Cmd) {
 			return m.InstantPromptHistoryNext
 		case key.Matches(msg, m.keyMaps.promptKeyMap.ReviewStack):
 			return m.ReviewStack
+		case key.Matches(msg, m.keyMaps.promptKeyMap.OpenEditor):
+			return m.OpenPromptInEditor
 		}
 	}
 	return nil

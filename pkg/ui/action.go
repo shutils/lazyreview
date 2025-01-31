@@ -244,3 +244,7 @@ func (m *model) DeleteReviewResult() (tea.Model, tea.Cmd) {
 	m.onChangeListSelectedItem()
 	return m, nil
 }
+
+func (m *model) EditPromptInEditor() (tea.Model, tea.Cmd) {
+	return m.OpenPromptInEditor()
+}
