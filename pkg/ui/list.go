@@ -46,7 +46,7 @@ func getItems(conf config.Config, reviewList []reviewInfo) []list.Item {
 
 	if len(conf.Sources) > 0 && !isDisabledAllSource(conf.Sources) {
 		items = collectItemsFromSources(conf.Sources)
-	} else if conf.Collector != "" {
+	} else if len(conf.Collector) != 0 {
 		items = customCollector(conf.Collector, "")
 	} else {
 		items = defaultItemCollector(conf)
@@ -131,7 +131,7 @@ func collectItemsFromSources(sources []config.Source) []list.Item {
 
 	for _, source := range sources {
 		if source.Enabled {
-			if source.Collector == "" {
+			if len(source.Collector) == 0 {
 				continue
 			}
 			collectedItems := customCollector(source.Collector, source.Name)

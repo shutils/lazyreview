@@ -25,8 +25,10 @@ type listItem struct {
 }
 
 type sourceItem struct {
-	name, collector, previewer string
-	enabled                    bool
+	name      string
+	collector []string
+	previewer []string
+	enabled   bool
 }
 
 func (i listItem) Title() string       { return i.title }
@@ -41,9 +43,9 @@ func (i sourceItem) Title() string {
 }
 func (i sourceItem) Description() string {
 	if i.enabled {
-		return "☑ collector: " + i.collector + " previewer: " + i.previewer
+		return "☑ collector: " + strings.Join(i.collector, ", ") + " previewer: " + strings.Join(i.previewer, ", ")
 	}
-	return "☐ collector: " + i.collector + " previewer: " + i.previewer
+	return "☐ collector: " + strings.Join(i.collector, ", ") + " previewer: " + strings.Join(i.previewer, ", ")
 }
 func (i sourceItem) FilterValue() string { return i.name }
 
