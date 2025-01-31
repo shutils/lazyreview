@@ -100,3 +100,6 @@ lazyreview [--config <config-file>]
 configファイルを指定しない場合は、xdgの仕様にしたがってファイルを生成します。
 
 ## Example
+
+- git diff
+  ![image](docs/assets/images/git_diff_summary.PNG)
