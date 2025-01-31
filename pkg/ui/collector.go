@@ -40,11 +40,13 @@ func defaultItemCollector(conf config.Config) []list.Item {
 	return items
 }
 
-func customCollector(collector, sourceName string) []list.Item {
+func customCollector(cmds []string, sourceName string) []list.Item {
+	if len(cmds) == 0 {
+		return []list.Item{}
+	}
 	items := []list.Item{}
-	cmdArray := strings.Split(collector, " ")
-	args := cmdArray[1:]
-	cmd := exec.Command(cmdArray[0], args...)
+	args := cmds[1:]
+	cmd := exec.Command(cmds[0], args...)
 
 	var stdout bytes.Buffer
 	cmd.Stdout = &stdout

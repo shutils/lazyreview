@@ -18,16 +18,46 @@ type ModelCost struct {
 	Input, Output float64
 }
 
+// StringOrSlice is a custom type that can hold either a string or a slice of strings.
+type StringOrSlice []string
+
+// UnmarshalText decodes a single string into a StringOrSlice.
+func (s *StringOrSlice) UnmarshalText(text []byte) error {
+	*s = []string{string(text)}
+	return nil
+}
+
+// UnmarshalTOML decodes either a string or a slice of strings into a StringOrSlice.
+func (s *StringOrSlice) UnmarshalTOML(data any) error {
+	switch v := data.(type) {
+	case string:
+		*s = strings.Fields(v) // Split the string by spaces into a slice
+	case []any:
+		var result []string
+		for _, item := range v {
+			if str, ok := item.(string); ok {
+				result = append(result, str)
+			} else {
+				return fmt.Errorf("invalid type in array: %T", item)
+			}
+		}
+		*s = result
+	default:
+		return fmt.Errorf("unexpected type: %T", v)
+	}
+	return nil
+}
+
 type Source struct {
-	Name      string
-	Collector string
-	Previewer string
-	Prompt    string
-	Enabled   bool
+	Name      string        `toml:"name"`
+	Collector StringOrSlice `toml:"collector"`
+	Previewer StringOrSlice `toml:"previewer"`
+	Prompt    string        `toml:"prompt"`
+	Enabled   bool          `toml:"enabled"`
 }
 
 func (s Source) String() string {
-	return fmt.Sprintf("Name: %s\nCollector: %s\nPreviewer: %s\nPrompt: %s\nEnabled: %t",
+	return fmt.Sprintf("Name: %s\nCollector: %v\nPreviewer: %v\nPrompt: %s\nEnabled: %t",
 		s.Name, s.Collector, s.Previewer, s.Prompt, s.Enabled)
 }
 
@@ -35,25 +65,25 @@ const projectName = "lazyreview"
 
 // Config holds the configuration details for the application.
 type Config struct {
-	ConfigPath    string    `toml:"-"`
-	Key           string    `toml:"key"`
-	Endpoint      string    `toml:"endpoint"`
-	Version       string    `toml:"version"`
-	Model         string    `toml:"model"`
-	ModelCost     ModelCost `toml:"modelCost"`
-	Target        string    `toml:"target"`
-	Output        string    `toml:"output"`
-	State         string    `toml:"state"`
-	Ignores       []string  `toml:"ignores"`
-	Prompt        string    `toml:"prompt"`
-	Type          string    `toml:"type"`
-	Collector     string    `toml:"collector"`
-	Previewer     string    `toml:"previewer"`
-	Glamour       string    `toml:"glamour"`
-	MaxTokens     int       `toml:"max_tokens"`
-	TmpReviewPath string    `toml:"-"`
-	Opener        string    `toml:"opener"`
-	Sources       []Source  `toml:"sources"`
+	ConfigPath    string        `toml:"-"`
+	Key           string        `toml:"key"`
+	Endpoint      string        `toml:"endpoint"`
+	Version       string        `toml:"version"`
+	Model         string        `toml:"model"`
+	ModelCost     ModelCost     `toml:"modelCost"`
+	Target        string        `toml:"target"`
+	Output        string        `toml:"output"`
+	State         string        `toml:"state"`
+	Ignores       []string      `toml:"ignores"`
+	Prompt        string        `toml:"prompt"`
+	Type          string        `toml:"type"`
+	Collector     StringOrSlice `toml:"collector"`
+	Previewer     StringOrSlice `toml:"previewer"`
+	Glamour       string        `toml:"glamour"`
+	MaxTokens     int           `toml:"max_tokens"`
+	TmpReviewPath string        `toml:"-"`
+	Opener        string        `toml:"opener"`
+	Sources       []Source      `toml:"sources"`
 }
 
 // loadConfig reads the configuration from the specified file.
@@ -168,7 +198,7 @@ func (c Config) ToStringArray() []string {
 
 	// Append Sources
 	for _, source := range c.Sources {
-		result = append(result, fmt.Sprintf("source={Name: %s, Collector: %s, Previewer: %s, Prompt: %s, Enabled: %t}",
+		result = append(result, fmt.Sprintf("source={Name: %s, Collector: %v, Previewer: %v, Prompt: %s, Enabled: %t}",
 			source.Name, source.Collector, source.Previewer, source.Prompt, source.Enabled))
 	}
 
