@@ -62,9 +62,33 @@ type Source struct {
 	Enabled   bool          `toml:"enabled"`
 }
 
-func (s Source) String() string {
-	return fmt.Sprintf("Name: %s\nCollector: %v\nPreviewer: %v\nPrompt: %s\nEnabled: %t",
-		s.Name, s.Collector, s.Previewer, s.Prompt, s.Enabled)
+func (i Source) Title() string {
+	if i.Enabled {
+		return "☑ " + i.Name
+	}
+	return "☐ " + i.Name
+}
+func (i Source) Description() string {
+	if i.Enabled {
+		return "☑ collector: " + strings.Join(i.Collector, ", ") + " previewer: " + strings.Join(i.Previewer, ", ")
+	}
+	return "☐ collector: " + strings.Join(i.Collector, ", ") + " previewer: " + strings.Join(i.Previewer, ", ")
+}
+func (i Source) FilterValue() string { return i.Name }
+
+func (i Source) String() string {
+	return fmt.Sprintf(
+		"Name: %s\n"+
+			"Collector: %s\n"+
+			"Previewer: %s\n"+
+			"Prompt: %s\n"+
+			"Enabled: %v",
+		i.Name,
+		strings.Join(i.Collector, " "),
+		strings.Join(i.Previewer, " "),
+		i.Prompt,
+		i.Enabled,
+	)
 }
 
 const projectName = "lazyreview"
@@ -201,13 +225,12 @@ func (c Config) ToStringArray() []string {
 		fmt.Sprintf("max_tokens=%d", c.MaxTokens),
 		fmt.Sprintf("tmp_review_path=%s", c.TmpReviewPath),
 		fmt.Sprintf("opener=%s", c.Opener),
-		//
+		"\n",
 	)
 
 	// Append Sources
 	for _, source := range c.Sources {
-		result = append(result, fmt.Sprintf("source={Name: %s, Collector: %v, Previewer: %v, Prompt: %s, Enabled: %t}",
-			source.Name, source.Collector, source.Previewer, source.Prompt, source.Enabled))
+		result = append(result, source.String(), "\n")
 	}
 
 	return result
