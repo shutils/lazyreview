@@ -178,6 +178,9 @@ func getSourceItems(sources []config.Source) []list.Item {
 
 func (m *model) setSourceDetailContent() (tea.Model, tea.Cmd) {
 	selectedSource := m.panels.sourceListPanel.SelectedItem()
+	if selectedSource == nil {
+		return m, nil
+	}
 	source, ok := selectedSource.(config.Source)
 	if !ok {
 		return m, func() tea.Msg {

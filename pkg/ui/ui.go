@@ -186,10 +186,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.setSourceDetailContent()
 	default:
 		switch m.focusState {
-		case SourceListPanelFocus:
-			selectedSourceName := m.panels.sourceListPanel.SelectedItem().(config.Source)
-			selectedSource := m.conf.GetSourceFromName(selectedSourceName.Name)
-			m.panels.contextDetailPanel.SetContent(selectedSource.String())
 		case ContextPanelFocus:
 			m.panels.contextDetailPanel.SetContent(m.getContextString())
 		}
