@@ -159,20 +159,34 @@ func makeHash(item listItem) string {
 }
 
 func getSourceItems(sources []config.Source) []list.Item {
-	var items []list.Item
-
 	if len(sources) == 0 {
 		return []list.Item{}
 	}
+	items := make([]list.Item, len(sources))
 
-	for _, source := range sources {
-		items = append(items, sourceItem{
-			name:      source.Name,
-			collector: source.Collector,
-			previewer: source.Previewer,
-			enabled:   source.Enabled,
-		})
+	for i, source := range sources {
+		items[i] = config.Source{
+			Name:      source.Name,
+			Collector: source.Collector,
+			Previewer: source.Previewer,
+			Enabled:   source.Enabled,
+		}
 	}
 
 	return items
+}
+
+func (m *model) setSourceDetailContent() (tea.Model, tea.Cmd) {
+	selectedSource := m.panels.sourceListPanel.SelectedItem()
+	source, ok := selectedSource.(config.Source)
+	if !ok {
+		return m, func() tea.Msg {
+			return showMessageMsg{
+				message: "Failed to set source details",
+			}
+		}
+	}
+	m.panels.sourceDetailPanel.SetContent(source.String())
+
+	return m, nil
 }

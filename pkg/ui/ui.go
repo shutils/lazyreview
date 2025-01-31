@@ -25,30 +25,9 @@ type listItem struct {
 	title, param, sourceName, id string
 }
 
-type sourceItem struct {
-	name      string
-	collector []string
-	previewer []string
-	enabled   bool
-}
-
 func (i listItem) Title() string       { return i.title }
 func (i listItem) Description() string { return i.param }
 func (i listItem) FilterValue() string { return i.title }
-
-func (i sourceItem) Title() string {
-	if i.enabled {
-		return "☑ " + i.name
-	}
-	return "☐ " + i.name
-}
-func (i sourceItem) Description() string {
-	if i.enabled {
-		return "☑ collector: " + strings.Join(i.collector, ", ") + " previewer: " + strings.Join(i.previewer, ", ")
-	}
-	return "☐ collector: " + strings.Join(i.collector, ", ") + " previewer: " + strings.Join(i.previewer, ", ")
-}
-func (i sourceItem) FilterValue() string { return i.name }
 
 type updateSourceListMsg struct {
 }
@@ -202,11 +181,14 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 			}
 		}
+	case updateFocusPanelMsg:
+		m.onChangeListSelectedItem()
+		m.setSourceDetailContent()
 	default:
 		switch m.focusState {
 		case SourceListPanelFocus:
-			selectedSourceName := m.panels.sourceListPanel.SelectedItem().(sourceItem)
-			selectedSource := m.conf.GetSourceFromName(selectedSourceName.name)
+			selectedSourceName := m.panels.sourceListPanel.SelectedItem().(config.Source)
+			selectedSource := m.conf.GetSourceFromName(selectedSourceName.Name)
 			m.panels.contextDetailPanel.SetContent(selectedSource.String())
 		case ContextPanelFocus:
 			m.panels.contextDetailPanel.SetContent(m.getContextString())
@@ -221,6 +203,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	if m.focusState == SourceListPanelFocus {
+		m.setSourceDetailContent()
 		m.panels.sourceListPanel, cmd = m.panels.sourceListPanel.Update(msg)
 		cmds = append(cmds, cmd)
 	}

@@ -5,6 +5,7 @@ import (
 
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/shutils/lazyreview/pkg/config"
 	"github.com/shutils/lazyreview/pkg/state"
 )
 
@@ -222,8 +223,8 @@ func (m *model) OpenCurrentReview() (tea.Model, tea.Cmd) {
 }
 
 func (m *model) ToggleSourceEnabled() (tea.Model, tea.Cmd) {
-	selectedItem := m.panels.sourceListPanel.SelectedItem().(sourceItem)
-	m.conf.ToggleSourceEnabled(selectedItem.name)
+	selectedItem := m.panels.sourceListPanel.SelectedItem().(config.Source)
+	m.conf.ToggleSourceEnabled(selectedItem.Name)
 	cmd := func() tea.Msg {
 		return updateSourceListMsg{}
 	}
