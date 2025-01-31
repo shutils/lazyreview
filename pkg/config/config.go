@@ -82,7 +82,12 @@ func NewConfig() Config {
 	setConfigFlags(&c, defaults)
 
 	if err := loadConfigFile(&c); err != nil {
-		saveConfig(c.ConfigPath, Config{})
+		if os.IsNotExist(err) {
+			saveConfig(c.ConfigPath, Config{})
+			log.Println("Config file not found. A new one has been created at", c.ConfigPath)
+		} else {
+			log.Fatalln("Failed to load config file:", err)
+		}
 	}
 
 	validateConfig(&c)
