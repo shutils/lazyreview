@@ -45,11 +45,11 @@ func getItems(conf config.Config, reviewList []reviewInfo) []list.Item {
 	var items []list.Item
 
 	if len(conf.Sources) > 0 && !isDisabledAllSource(conf.Sources) {
-		items = collectItemsFromSources(conf.Sources)
+		items = collectItemsFromSources(conf.Sources, conf)
 	} else if len(conf.Collector) != 0 {
 		items = customCollector(conf.Collector, "")
 	} else {
-		items = defaultItemCollector(conf)
+		items = defaultItemCollector(conf, "")
 	}
 
 	reviewStateMap := make(map[string]string)
@@ -126,15 +126,17 @@ func isDisabledAllSource(sources []config.Source) bool {
 	return true
 }
 
-func collectItemsFromSources(sources []config.Source) []list.Item {
+func collectItemsFromSources(sources []config.Source, conf config.Config) []list.Item {
 	var items []list.Item
 
 	for _, source := range sources {
 		if source.Enabled {
+			var collectedItems []list.Item
 			if len(source.Collector) == 0 {
-				continue
+				collectedItems = defaultItemCollector(conf, source.Name)
+			} else {
+				collectedItems = customCollector(source.Collector, source.Name)
 			}
-			collectedItems := customCollector(source.Collector, source.Name)
 			if len(collectedItems) != 0 {
 				items = append(items, collectedItems...)
 			}
@@ -170,6 +172,7 @@ func getSourceItems(sources []config.Source) []list.Item {
 			Collector: source.Collector,
 			Previewer: source.Previewer,
 			Enabled:   source.Enabled,
+			Prompt:    source.Prompt,
 		}
 	}
 

@@ -13,7 +13,7 @@ import (
 	"github.com/shutils/lazyreview/pkg/config"
 )
 
-func defaultItemCollector(conf config.Config) []list.Item {
+func defaultItemCollector(conf config.Config, sourceName string) []list.Item {
 	items := []list.Item{}
 	compiledPatterns := make([]*regexp.Regexp, len(conf.Ignores))
 	for i, p := range conf.Ignores {
@@ -30,7 +30,7 @@ func defaultItemCollector(conf config.Config) []list.Item {
 					return nil
 				}
 			}
-			items = append(items, listItem{title: d.Name(), param: path, sourceName: ""})
+			items = append(items, listItem{title: d.Name(), param: path, sourceName: sourceName})
 		}
 		return nil
 	})
