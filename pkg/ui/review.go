@@ -111,7 +111,7 @@ func (m *model) reviewContent() tea.Cmd {
 			review string
 			err    error
 		)
-		selectedItem, ok := m.panels.itemListPanel.SelectedItem().(listItem)
+		selectedItem, ok := m.panels.itemListPanel.model.SelectedItem().(listItem)
 
 		if ok {
 			context := m.getContextString()
@@ -184,7 +184,7 @@ func (m *model) getPrompt() string {
 		return m.instantPrompt
 	}
 
-	selectedItem, ok := m.panels.itemListPanel.SelectedItem().(listItem)
+	selectedItem, ok := m.panels.itemListPanel.model.SelectedItem().(listItem)
 	if !ok {
 		return ""
 	}

@@ -24,17 +24,17 @@ func (m *model) ZoomPanel() (tea.Model, tea.Cmd) {
 }
 
 func (m *model) ListCursorDown() (tea.Model, tea.Cmd) {
-	m.panels.itemListPanel.CursorDown()
+	m.panels.itemListPanel.model.CursorDown()
 	return m.onChangeListSelectedItem()
 }
 
 func (m *model) ListCursorUp() (tea.Model, tea.Cmd) {
-	m.panels.itemListPanel.CursorUp()
+	m.panels.itemListPanel.model.CursorUp()
 	return m.onChangeListSelectedItem()
 }
 
 func (m *model) ReviewStack() (tea.Model, tea.Cmd) {
-	item := m.panels.itemListPanel.SelectedItem().(listItem)
+	item := m.panels.itemListPanel.model.SelectedItem().(listItem)
 	var cmds []tea.Cmd
 	cmds = append(cmds, func() tea.Msg {
 		return reviewStackMsg{
@@ -47,7 +47,7 @@ func (m *model) ReviewStack() (tea.Model, tea.Cmd) {
 }
 
 func (m *model) ToggleAiContext() (tea.Model, tea.Cmd) {
-	item := m.panels.itemListPanel.SelectedItem().(listItem)
+	item := m.panels.itemListPanel.model.SelectedItem().(listItem)
 	index := findIndex(m.panels.contextListPanel.Items(), item.id)
 	if index == -1 {
 		return m.addContextStack(item.id)
@@ -57,8 +57,8 @@ func (m *model) ToggleAiContext() (tea.Model, tea.Cmd) {
 }
 
 func (m *model) ReloadItems() (tea.Model, tea.Cmd) {
-	if m.panels.itemListPanel.FilterState() == list.Unfiltered {
-		m.panels.itemListPanel.SetItems(getItems(m.conf, m.reviewList))
+	if m.panels.itemListPanel.model.FilterState() == list.Unfiltered {
+		m.panels.itemListPanel.model.SetItems(getItems(m.conf, m.reviewList))
 	}
 	return *m, nil
 }
@@ -198,7 +198,7 @@ func (m *model) InstantPromptHistoryNext() (tea.Model, tea.Cmd) {
 }
 
 func (m *model) OpenCurrentReview() (tea.Model, tea.Cmd) {
-	selectedItem, ok := m.panels.itemListPanel.SelectedItem().(listItem)
+	selectedItem, ok := m.panels.itemListPanel.model.SelectedItem().(listItem)
 	if !ok {
 		return m, nil
 	}
@@ -232,7 +232,7 @@ func (m *model) ToggleSourceEnabled() (tea.Model, tea.Cmd) {
 }
 
 func (m *model) DeleteReviewResult() (tea.Model, tea.Cmd) {
-	selectedItem := m.panels.itemListPanel.SelectedItem()
+	selectedItem := m.panels.itemListPanel.model.SelectedItem()
 	item, ok := selectedItem.(listItem)
 	if !ok {
 		return m, func() tea.Msg {
@@ -240,9 +240,20 @@ func (m *model) DeleteReviewResult() (tea.Model, tea.Cmd) {
 		}
 	}
 	m.deleteReview(item.id)
-	index := m.panels.itemListPanel.Index()
+	index := m.panels.itemListPanel.model.Index()
 	m.changeItemTitlePrefix(index, "☐ ")
 	m.onChangeListSelectedItem()
+	return m, nil
+}
+
+func (m *model) ToggleItemListViewStyle() (tea.Model, tea.Cmd) {
+	m.panels.itemListPanel.showDescription = !m.panels.itemListPanel.showDescription
+
+	if m.panels.itemListPanel.showDescription {
+		m.panels.itemListPanel.model.SetDelegate(m.panels.itemListPanel.normalDelegate)
+	} else {
+		m.panels.itemListPanel.model.SetDelegate(m.panels.itemListPanel.narrowDelegate)
+	}
 	return m, nil
 }
 
