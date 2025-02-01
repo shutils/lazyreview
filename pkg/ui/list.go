@@ -170,6 +170,7 @@ func getSourceItems(sources []config.Source) []list.Item {
 			Collector: source.Collector,
 			Previewer: source.Previewer,
 			Enabled:   source.Enabled,
+			Prompt:    source.Prompt,
 		}
 	}
 
