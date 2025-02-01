@@ -27,7 +27,7 @@ type listItem struct {
 
 func (i listItem) Title() string       { return i.title }
 func (i listItem) Description() string { return i.param }
-func (i listItem) FilterValue() string { return i.title }
+func (i listItem) FilterValue() string { return i.param }
 
 type updateSourceListMsg struct {
 }
@@ -82,7 +82,7 @@ func NewUi(conf config.Config, client openai.Client) model {
 	m.UpdateState()
 	m.currentHistoryIndex = len(m.uiState.PromptHistory)
 	m.loadReviews()
-	m.panels.itemListPanel.SetItems(getItems(m.conf, m.reviewList))
+	m.panels.itemListPanel.model.SetItems(getItems(m.conf, m.reviewList))
 	m.panels.sourceListPanel.SetItems(getSourceItems(m.conf.Sources))
 	m.onChangeListSelectedItem()
 	return m
@@ -102,14 +102,14 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return action()
 		}
 	case tea.WindowSizeMsg:
-		m.handleWindowSize(msg)
+		return m.handleWindowSize(msg)
 	case reviewMsg:
-		selectedItem := m.panels.itemListPanel.SelectedItem().(listItem)
-		index := findIndex(m.panels.itemListPanel.Items(), msg.id)
+		selectedItem := m.panels.itemListPanel.model.SelectedItem().(listItem)
+		index := findIndex(m.panels.itemListPanel.model.Items(), msg.id)
 		if index == -1 {
 			return m, nil
 		}
-		item := m.panels.itemListPanel.Items()[index].(listItem)
+		item := m.panels.itemListPanel.model.Items()[index].(listItem)
 		review := reviewInfo{
 			ID:     item.id,
 			Param:  item.param,
@@ -137,7 +137,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case reviewStateMsg:
 		m.reviewState = msg.state
 	case reviewStackMsg:
-		index := findIndex(m.panels.itemListPanel.Items(), msg.id)
+		index := findIndex(m.panels.itemListPanel.model.Items(), msg.id)
 		if index == -1 {
 			return m, nil
 		}
@@ -159,7 +159,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case updateSourceListMsg:
 		m.panels.sourceListPanel.SetItems(getSourceItems(m.conf.Sources))
 		m.panels.contextListPanel.Update(msg)
-		m.panels.itemListPanel.SetItems(getItems(m.conf, m.reviewList))
+		m.panels.itemListPanel.model.SetItems(getItems(m.conf, m.reviewList))
 	case progress.FrameMsg:
 		progressModel, cmd := m.panels.reviewProgressPanel.Update(msg)
 		m.panels.reviewProgressPanel = progressModel.(progress.Model)
@@ -186,10 +186,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.setSourceDetailContent()
 	default:
 		switch m.focusState {
-		case SourceListPanelFocus:
-			selectedSourceName := m.panels.sourceListPanel.SelectedItem().(config.Source)
-			selectedSource := m.conf.GetSourceFromName(selectedSourceName.Name)
-			m.panels.contextDetailPanel.SetContent(selectedSource.String())
 		case ContextPanelFocus:
 			m.panels.contextDetailPanel.SetContent(m.getContextString())
 		}
@@ -198,7 +194,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	if m.focusState == ItemListPanelFocus {
-		m.panels.itemListPanel, cmd = m.panels.itemListPanel.Update(msg)
+		m.panels.itemListPanel.model, cmd = m.panels.itemListPanel.model.Update(msg)
 		cmds = append(cmds, cmd)
 	}
 
@@ -255,7 +251,7 @@ func (m *model) removeReviewStack(index int) {
 }
 
 func (m *model) updateReviewStackPanel() {
-	itemTitleList := getItemListString(getReviewStackItems(m.panels.itemListPanel.Items(), m.reviewStack))
+	itemTitleList := getItemListString(getReviewStackItems(m.panels.itemListPanel.model.Items(), m.reviewStack))
 	m.panels.reviewStackPanel.SetContent(itemTitleList)
 }
 
@@ -268,11 +264,11 @@ func (m *model) updateReviewProgressPanel() tea.Cmd {
 }
 
 func (m *model) addContextStack(id string) (tea.Model, tea.Cmd) {
-	index := findIndex(m.panels.itemListPanel.Items(), id)
+	index := findIndex(m.panels.itemListPanel.model.Items(), id)
 	if index == -1 {
 		return *m, nil
 	}
-	item := m.panels.itemListPanel.Items()[index]
+	item := m.panels.itemListPanel.model.Items()[index]
 
 	contextList := m.panels.contextListPanel.Items()
 	contextList = append(contextList, item)
@@ -300,7 +296,7 @@ func (m *model) removeContextStack(id string) (tea.Model, tea.Cmd) {
 }
 
 func (m *model) changeItemTitlePrefix(index int, prefix string) {
-	item := m.panels.itemListPanel.Items()[index].(listItem)
+	item := m.panels.itemListPanel.model.Items()[index].(listItem)
 	item.title = replacePrefix(item.title, prefix)
-	m.panels.itemListPanel.SetItem(index, item)
+	m.panels.itemListPanel.model.SetItem(index, item)
 }

@@ -47,6 +47,10 @@ const (
 	Reviewing
 )
 
+const (
+	defaultPrompt = "you are a code reviewer. return the response in japanese."
+)
+
 func (m *model) saveReviews() tea.Cmd {
 	var reviews []reviewInfo
 	for _, review := range m.reviewList {
@@ -102,23 +106,19 @@ func (m *model) getReviewIndex(id string) int {
 
 func (m *model) reviewContent() tea.Cmd {
 	return func() tea.Msg {
-		selectedItem, ok := m.panels.itemListPanel.SelectedItem().(listItem)
-
 		var (
 			chat   *openai.ChatCompletion
 			review string
 			err    error
 		)
+		selectedItem, ok := m.panels.itemListPanel.model.SelectedItem().(listItem)
+
 		if ok {
 			context := m.getContextString()
 			// Generate content by including contextItems
 			content := previewContent(selectedItem, m.conf.Sources)
 			content = context + content
-			if m.instantPrompt == "" {
-				chat, err = m.client.Getreviewfromchatgpt(content, m.conf)
-			} else {
-				chat, err = m.client.GetReviewFromChatGPTWithPrompt(content, m.conf, m.instantPrompt)
-			}
+			chat, err = m.client.GetReviewFromChatGPTWithPrompt(content, m.conf, m.getPrompt())
 			if err != nil {
 				review = fmt.Sprintf("Failed to get review: %v", err)
 			} else {
@@ -172,4 +172,31 @@ func (m *model) deleteReview(reviewID string) tea.Cmd {
 
 	m.saveReviews()
 	return nil
+}
+
+// getPrompt retrieves the appropriate prompt for the code review process.
+// It first checks if an instant prompt has been set by the user. If so, that prompt is returned.
+// If there's no instant prompt, it attempts to fetch the associated prompt from the selected item in the item list panel.
+// If an associated prompt is not found, it checks the global configuration for a default prompt.
+// If no prompts are defined either in the item source or the configuration, the function will return a predefined default prompt:
+func (m *model) getPrompt() string {
+	if m.instantPrompt != "" {
+		return m.instantPrompt
+	}
+
+	selectedItem, ok := m.panels.itemListPanel.model.SelectedItem().(listItem)
+	if !ok {
+		return ""
+	}
+
+	itemSource, err := getSource(selectedItem.sourceName, m.conf.Sources)
+	if err == nil && itemSource.Prompt != "" {
+		return itemSource.Prompt
+	}
+
+	if m.conf.Prompt != "" {
+		return m.conf.Prompt
+	}
+
+	return defaultPrompt
 }

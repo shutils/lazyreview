@@ -21,7 +21,7 @@ type ZoomState int
 type FocusState int
 
 type panels struct {
-	itemListPanel       list.Model
+	itemListPanel       itemListPanel
 	itemPreviewPanel    viewport.Model
 	itemReviewPanel     viewport.Model
 	stateSummaryPanel   viewport.Model
@@ -41,7 +41,7 @@ type panels struct {
 
 func NewPanels() panels {
 	p := panels{
-		itemListPanel:       list.New([]list.Item{}, list.NewDefaultDelegate(), 0, 0),
+		itemListPanel:       NewItemListPanel(),
 		itemPreviewPanel:    viewport.New(0, 0),
 		itemReviewPanel:     viewport.New(0, 0),
 		stateSummaryPanel:   viewport.New(0, 0),
@@ -67,9 +67,9 @@ func (p *panels) setInitSetting() {
 	p.sourceListPanel = setListInitSetting(p.sourceListPanel)
 	p.contextListPanel = setListInitSetting(p.contextListPanel)
 
-	p.itemListPanel.SetShowHelp(false)
-	p.itemListPanel.SetShowTitle(false)
-	p.itemListPanel.KeyMap.Quit.Unbind()
+	p.itemListPanel.model.SetShowHelp(false)
+	p.itemListPanel.model.SetShowTitle(false)
+	p.itemListPanel.model.KeyMap.Quit.Unbind()
 }
 
 func setListInitSetting(l list.Model) list.Model {
@@ -189,14 +189,15 @@ func InsertTitleWithOffset(rendered, title string) string {
 	return strings.Join(lines, "\n")
 }
 
-func (m *model) handleWindowSize(msg tea.WindowSizeMsg) {
+func (m *model) handleWindowSize(msg tea.WindowSizeMsg) (model, tea.Cmd) {
 	m.winSize.height = msg.Height
 	m.winSize.width = msg.Width
+	m.setPanelSize()
+	return *m, nil
 }
 
 func (m *model) makeView() string {
 	m.setPanelSize()
-
 	if m.message != "" {
 		m.focusState = MessagePanelFocus
 		m.panels.messagePanel.SetContent(m.message)
@@ -212,7 +213,7 @@ func (m *model) makeView() string {
 	globalHelp := helpModel.View(m.keyMaps.globalKeyMap)
 	helpString := m.getHelpString(helpModel, globalHelp)
 
-	listPanel := m.buildPanel(m.panels.itemListPanel.View(), m.getPanelStyle(ItemListPanelFocus), m.panels.itemListPanel.Width(), m.panels.itemListPanel.Height(), "List")
+	listPanel := m.buildPanel(m.panels.itemListPanel.model.View(), m.getPanelStyle(ItemListPanelFocus), m.panels.itemListPanel.model.Width(), m.panels.itemListPanel.model.Height(), "List")
 	contentPanel := m.buildPanel(m.panels.itemPreviewPanel.View(), m.getPanelStyle(ContentPanelFocus), m.panels.itemPreviewPanel.Width, m.panels.itemPreviewPanel.Height, "Content")
 	reviewPanel := m.buildPanel(m.panels.itemReviewPanel.View(), m.getPanelStyle(ReviewPanelFocus), m.panels.itemReviewPanel.Width, m.panels.itemReviewPanel.Height, "Review")
 	reviewStackPanel := m.buildPanel(m.panels.reviewStackPanel.View(), m.getPanelStyle(Other), m.panels.reviewStackPanel.Width, m.panels.reviewStackPanel.Height, "Review stack")
@@ -352,12 +353,13 @@ func (m *model) calcAreaSize() (int, int) {
 	return primaryAreaWidth, secondlyAreaWidth
 }
 
-func (m *model) setPanelSize() {
+func (m *model) setPanelSize() (tea.Model, tea.Cmd) {
 	m.setPrimaryPanelSizes()
 	m.setSecondaryPanelSizes()
 
 	m.panels.messagePanel.Width = m.winSize.width
 	m.panels.messagePanel.Height = m.winSize.height
+	return m, nil
 }
 
 func (m *model) setPrimaryPanelSizes() {
@@ -385,7 +387,7 @@ func (m *model) setPrimaryPanelSizes() {
 	listPanelHeight := m.winSize.height - stateSummaryPanelOuterHeight - reviewProgresPanelOuterHeight - contextListPanelOuterHeight - configSummaryPanelOuterHeight - footerHeight - listPaginationHeight - sourceListPanelOuterHeight
 	primaryAreaWidth, _ := m.calcAreaSize()
 
-	m.panels.itemListPanel.SetSize(primaryAreaWidth-borderWidth*2, listPanelHeight)
+	m.panels.itemListPanel.model.SetSize(primaryAreaWidth-borderWidth*2, listPanelHeight)
 	m.panels.configSummaryPanel.Width = primaryAreaWidth - borderWidth*2
 	m.panels.configSummaryPanel.Height = configSummaryPanelHeight
 	m.panels.reviewProgressPanel.Width = primaryAreaWidth - borderWidth*2
@@ -495,4 +497,32 @@ func isFocusPrimary(state FocusState) bool {
 
 func isFocusItemPreviewPanel(state FocusState) bool {
 	return state == ContentPanelFocus
+}
+
+type itemListPanel struct {
+	model           list.Model
+	showDescription bool
+	normalDelegate  list.DefaultDelegate
+	narrowDelegate  list.DefaultDelegate
+}
+
+func NewItemListPanel() itemListPanel {
+	l := itemListPanel{}
+	l.model = list.New([]list.Item{}, list.NewDefaultDelegate(), 0, 0)
+	l.showDescription = true
+	l.normalDelegate = l.NewDefaultNormalDelegate()
+	l.narrowDelegate = l.NewDefaultNarrowDelegate()
+	return l
+}
+
+func (l itemListPanel) NewDefaultNormalDelegate() list.DefaultDelegate {
+	return list.NewDefaultDelegate()
+}
+
+func (l itemListPanel) NewDefaultNarrowDelegate() list.DefaultDelegate {
+	delegate := list.NewDefaultDelegate()
+	delegate.ShowDescription = false
+	delegate.SetHeight(1)
+	delegate.SetSpacing(0)
+	return delegate
 }

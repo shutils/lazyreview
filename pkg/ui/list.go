@@ -10,7 +10,7 @@ import (
 )
 
 func (m *model) onChangeListSelectedItem() (*model, tea.Cmd) {
-	selectedItem, ok := m.panels.itemListPanel.SelectedItem().(listItem)
+	selectedItem, ok := m.panels.itemListPanel.model.SelectedItem().(listItem)
 	reviewContent := "No review"
 	itemContent := previewContent(selectedItem, m.conf.Sources)
 	if ok && m.getReviewIndex(selectedItem.id) != -1 {
@@ -178,6 +178,9 @@ func getSourceItems(sources []config.Source) []list.Item {
 
 func (m *model) setSourceDetailContent() (tea.Model, tea.Cmd) {
 	selectedSource := m.panels.sourceListPanel.SelectedItem()
+	if selectedSource == nil {
+		return m, nil
+	}
 	source, ok := selectedSource.(config.Source)
 	if !ok {
 		return m, func() tea.Msg {
