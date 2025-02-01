@@ -10,7 +10,7 @@ import (
 )
 
 func (m *model) onChangeListSelectedItem() (*model, tea.Cmd) {
-	selectedItem, ok := m.panels.itemListPanel.SelectedItem().(listItem)
+	selectedItem, ok := m.panels.itemListPanel.model.SelectedItem().(listItem)
 	reviewContent := "No review"
 	itemContent := previewContent(selectedItem, m.conf.Sources)
 	if ok && m.getReviewIndex(selectedItem.id) != -1 {

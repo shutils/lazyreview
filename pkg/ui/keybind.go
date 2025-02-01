@@ -124,6 +124,7 @@ type listKeyMap struct {
 	OpenReview                key.Binding
 	ToggleAiContext           key.Binding
 	DeleteReviewResult        key.Binding
+	ToggleViewStyle           key.Binding
 }
 
 func (k listKeyMap) ShortHelp() []key.Binding {
@@ -140,6 +141,7 @@ func (k listKeyMap) ShortHelp() []key.Binding {
 		k.OpenReview,
 		k.ToggleAiContext,
 		k.DeleteReviewResult,
+		k.ToggleViewStyle,
 		// k.ReviewContentCursorDown,
 		// k.ReviewContentCursorUp,
 		// k.ReviewContentHalfViewDown,
@@ -160,6 +162,7 @@ func (k listKeyMap) FullHelp() [][]key.Binding {
 			k.FocusContextListPanel,
 			k.OpenReview,
 			k.DeleteReviewResult,
+			k.ToggleViewStyle,
 			// k.ReviewContentCursorDown,
 			// k.ReviewContentCursorUp,
 			// k.ReviewContentHalfViewDown,
@@ -232,6 +235,10 @@ var ListKeyMap = listKeyMap{
 	DeleteReviewResult: key.NewBinding(
 		key.WithKeys("d"),
 		key.WithHelp("d", "delete review"),
+	),
+	ToggleViewStyle: key.NewBinding(
+		key.WithKeys("t"),
+		key.WithHelp("t", "toggle view style"),
 	),
 }
 
@@ -661,7 +668,7 @@ func (m *model) handleGlobalKey(msg tea.Msg) func() (tea.Model, tea.Cmd) {
 }
 
 func (m *model) handleItemListKey(msg tea.Msg) func() (tea.Model, tea.Cmd) {
-	if m.panels.itemListPanel.FilterState() == list.Filtering {
+	if m.panels.itemListPanel.model.FilterState() == list.Filtering {
 		return nil
 	}
 	switch msg := msg.(type) {
@@ -697,6 +704,8 @@ func (m *model) handleItemListKey(msg tea.Msg) func() (tea.Model, tea.Cmd) {
 			return m.ToggleAiContext
 		case key.Matches(msg, m.keyMaps.listKeyMap.DeleteReviewResult):
 			return m.DeleteReviewResult
+		case key.Matches(msg, m.keyMaps.listKeyMap.ToggleViewStyle):
+			return m.ToggleItemListViewStyle
 		}
 	}
 	return nil
