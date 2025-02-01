@@ -102,7 +102,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return action()
 		}
 	case tea.WindowSizeMsg:
-		m.handleWindowSize(msg)
+		return m.handleWindowSize(msg)
 	case reviewMsg:
 		selectedItem := m.panels.itemListPanel.SelectedItem().(listItem)
 		index := findIndex(m.panels.itemListPanel.Items(), msg.id)

@@ -189,14 +189,15 @@ func InsertTitleWithOffset(rendered, title string) string {
 	return strings.Join(lines, "\n")
 }
 
-func (m *model) handleWindowSize(msg tea.WindowSizeMsg) {
+func (m *model) handleWindowSize(msg tea.WindowSizeMsg) (model, tea.Cmd) {
 	m.winSize.height = msg.Height
 	m.winSize.width = msg.Width
+	m.setPanelSize()
+	return *m, nil
 }
 
 func (m *model) makeView() string {
 	m.setPanelSize()
-
 	if m.message != "" {
 		m.focusState = MessagePanelFocus
 		m.panels.messagePanel.SetContent(m.message)
@@ -352,12 +353,13 @@ func (m *model) calcAreaSize() (int, int) {
 	return primaryAreaWidth, secondlyAreaWidth
 }
 
-func (m *model) setPanelSize() {
+func (m *model) setPanelSize() (tea.Model, tea.Cmd) {
 	m.setPrimaryPanelSizes()
 	m.setSecondaryPanelSizes()
 
 	m.panels.messagePanel.Width = m.winSize.width
 	m.panels.messagePanel.Height = m.winSize.height
+	return m, nil
 }
 
 func (m *model) setPrimaryPanelSizes() {
