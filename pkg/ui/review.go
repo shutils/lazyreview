@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -67,6 +68,14 @@ func (m *model) saveReviews() tea.Cmd {
 			return SendErrorMessage("Failed to save marshal reviews", err)
 		}
 	}
+
+	// Ensure the directory exists
+	if err := os.MkdirAll(filepath.Dir(m.conf.Output), os.ModePerm); err != nil {
+		return func() tea.Msg {
+			return SendErrorMessage("Failed to create directories", err)
+		}
+	}
+
 	err = os.WriteFile(m.conf.Output, jsonData, 0644)
 	if err != nil {
 		return func() tea.Msg {
