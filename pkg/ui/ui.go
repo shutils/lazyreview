@@ -13,7 +13,6 @@ import (
 )
 
 type panelSize struct {
-	secondlyPanelWidth,
 	itemPreviewPanelWidth, itemReviewPanelWidth int
 }
 
@@ -168,8 +167,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.panels.contextListPanel.Update(msg)
 		m.panels.itemListPanel.model.SetItems(getItems(m.conf, m.reviewList))
 	case progress.FrameMsg:
-		progressModel, cmd := m.panels.reviewProgressPanel.Update(msg)
-		m.panels.reviewProgressPanel = progressModel.(progress.Model)
+		m.panels.reviewProgressPanel, cmd = m.panels.reviewProgressPanel.Update(msg)
 		cmds = append(cmds, cmd)
 	case showMessageMsg:
 		if msg.message != "" {
