@@ -9,12 +9,17 @@ import (
 	"github.com/shutils/lazyreview/pkg/config"
 )
 
+const (
+	noReviewText = "No review"
+)
+
 func (m *model) onChangeListSelectedItem() (*model, tea.Cmd) {
 	selectedItem, ok := m.panels.itemListPanel.model.SelectedItem().(listItem)
-	reviewContent := "No review"
+	reviewContent := noReviewText
 	itemContent := previewContent(selectedItem, m.conf.Sources)
-	if ok && m.getReviewIndex(selectedItem.id) != -1 {
-		reviewContent = getRendered(m.reviewList[m.getReviewIndex(selectedItem.id)].Review, m.conf.Glamour, m.panels.itemReviewPanel.Width)
+	reviewIndex := m.getReviewIndex(selectedItem.id)
+	if ok && reviewIndex != -1 {
+		reviewContent = getRendered(m.reviewList[reviewIndex].Review, m.conf.Glamour, m.panels.itemReviewPanel.Width())
 	}
 	m.loadReviewPanel(reviewContent)
 	m.loadContentPanel(itemContent)
