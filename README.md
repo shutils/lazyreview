@@ -57,6 +57,7 @@ Please provide appropriate suggestions in Markdown format when answering.
 max_tokens = 2000 # Maximum tokens allowed for AI.
 glamour = "dark" # Display style for review results. Currently supports "dark", "light", "".
 opener = "nvim" # Command used to open reviews or input prompts.
+# opener = ["code", "--wait"] # Commands can be passed as an array. Useful when executing commands with the --wait option in Visual Studio Code.
 
 [modelCost]
 input = 0.15 # $ per 1M tokens

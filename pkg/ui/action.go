@@ -214,7 +214,10 @@ func (m *model) OpenCurrentReview() (tea.Model, tea.Cmd) {
 	review := m.reviewList[m.getReviewIndex(selectedItem.id)].Review
 	state.SaveTmpReview(m.conf.TmpReviewPath, review)
 
-	c := exec.Command(m.conf.Opener, m.conf.TmpReviewPath)
+	cmdName, cmdArgs := config.ParseCommand(m.conf.Opener)
+
+	cmdArgs = append(cmdArgs, m.conf.TmpReviewPath)
+	c := exec.Command(cmdName, cmdArgs...)
 	return m, tea.ExecProcess(c, func(err error) tea.Msg {
 		var message = ""
 		if err != nil {
