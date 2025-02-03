@@ -111,7 +111,7 @@ type Config struct {
 	Previewer     StringOrSlice `toml:"previewer"`
 	Glamour       string        `toml:"glamour"`
 	MaxTokens     int           `toml:"max_tokens"`
-	Opener        string        `toml:"opener"`
+	Opener        StringOrSlice `toml:"opener"`
 	Sources       []Source      `toml:"sources"`
 	TmpReviewPath string        `toml:"-"`
 	TmpPromptPath string        `toml:"-"`
@@ -280,4 +280,15 @@ func (c *Config) GetSourceFromName(sourceName string) Source {
 	}
 	return Source{}
 
+}
+
+// ParseCommand splits a command into the command name and arguments.
+func ParseCommand(command []string) (string, []string) {
+	if len(command) == 0 {
+		return "", nil
+	}
+	if len(command) == 1 {
+		return command[0], nil
+	}
+	return command[0], command[1:]
 }

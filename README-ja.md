@@ -59,6 +59,7 @@ Please provide appropriate suggestions in Markdown format when answering.
 max_tokens = 2000 # AIに許可する最大トークンです。
 glamour = "dark" # レビュー結果を装飾して表示する設定です。現在は"dark", "light", ""がサポートされています。
 opener = "nvim" # レビューを開いたりプロンプトを入力する際に使用されるコマンドです。
+# opener = ["code", "--wait"] # コマンドは配列形式でも渡せます。Visual Studio Codeで--waitオプションを使用してコマンドを実行する際に便利です。
 
 [modelCost]
 input = 0.15 # 1Mトークン当たりの$
