@@ -25,6 +25,10 @@ type setPromptMsg struct {
 	text string
 }
 
+type setEditedContextMsg struct {
+	text string
+}
+
 type showMessageMsg struct {
 	message string
 }

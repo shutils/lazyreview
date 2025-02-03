@@ -39,7 +39,10 @@ func (m *model) loadContentPanel(itemContent string) {
 // Returns a index of the item with the given param
 func findIndex(items []list.Item, id string) int {
 	for i, item := range items {
-		if item.(listItem).id == id {
+		if listItem, ok := item.(listItem); ok && listItem.id == id {
+			return i
+		}
+		if listItem, ok := item.(contextItem); ok && listItem.id == id {
 			return i
 		}
 	}

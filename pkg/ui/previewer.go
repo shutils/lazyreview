@@ -68,3 +68,16 @@ func previewContent(item listItem, sources []config.Source) string {
 	}
 	return defaultPreviewer(item.param)
 }
+
+func previewContext(item contextItem, sources []config.Source) string {
+	if item.isEdited {
+		return item.content
+	}
+	if item.sourceName != "" {
+		source, _ := getSource(item.sourceName, sources)
+		if len(source.Previewer) != 0 {
+			return customPreviewer(source.Previewer, item.param)
+		}
+	}
+	return defaultPreviewer(item.param)
+}

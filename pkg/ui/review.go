@@ -161,9 +161,9 @@ func (m *model) getContextString() string {
 	}
 	var contextItems []string
 	for _, item := range items {
-		item, ok := item.(listItem)
+		item, ok := item.(contextItem)
 		if ok {
-			contextItems = append(contextItems, item.param+"\n"+previewContent(item, m.conf.Sources))
+			contextItems = append(contextItems, item.param+"\n"+previewContext(item, m.conf.Sources))
 		}
 	}
 	return strings.Join(contextItems, "\n\n")
