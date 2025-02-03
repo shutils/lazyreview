@@ -3,7 +3,6 @@ package ui
 import (
 	"bytes"
 	"io/fs"
-	"log"
 	"os/exec"
 	"path/filepath"
 	"regexp"
@@ -19,9 +18,9 @@ func defaultItemCollector(conf config.Config, sourceName string) []list.Item {
 	for i, p := range conf.Ignores {
 		compiledPatterns[i] = regexp.MustCompile(p)
 	}
-	err := filepath.WalkDir(conf.Target, func(path string, d fs.DirEntry, err error) error {
+	_ = filepath.WalkDir(conf.Target, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
-			return err
+			return nil
 		}
 		if !d.IsDir() {
 			// 絞り込み処理
@@ -34,9 +33,6 @@ func defaultItemCollector(conf config.Config, sourceName string) []list.Item {
 		}
 		return nil
 	})
-	if err != nil {
-		log.Fatal(err)
-	}
 	return items
 }
 
