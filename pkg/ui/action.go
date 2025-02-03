@@ -177,22 +177,26 @@ func (m *model) ExitMessagePanel() (tea.Model, tea.Cmd) {
 }
 
 func (m *model) InstantPromptHistoryPrev() (tea.Model, tea.Cmd) {
-	if m.currentHistoryIndex-1 >= 0 && len(m.uiState.PromptHistory) > 0 {
-		m.panels.promptPanel.SetValue(m.uiState.PromptHistory[m.currentHistoryIndex-1])
+	if len(m.uiState.PromptHistory) > 0 && m.currentHistoryIndex > 0 {
 		m.currentHistoryIndex--
+		m.panels.promptPanel.SetValue(m.uiState.PromptHistory[m.currentHistoryIndex])
 	}
+
+	m.instantPrompt = m.panels.promptPanel.Value()
 
 	return m, nil
 }
 
 func (m *model) InstantPromptHistoryNext() (tea.Model, tea.Cmd) {
-	if m.currentHistoryIndex+1 < len(m.uiState.PromptHistory) && len(m.uiState.PromptHistory) > 0 {
-		m.panels.promptPanel.SetValue(m.uiState.PromptHistory[m.currentHistoryIndex+1])
+	if len(m.uiState.PromptHistory) > 0 && m.currentHistoryIndex+1 < len(m.uiState.PromptHistory) {
 		m.currentHistoryIndex++
+		m.panels.promptPanel.SetValue(m.uiState.PromptHistory[m.currentHistoryIndex])
 	} else {
 		m.panels.promptPanel.SetValue("")
 		m.currentHistoryIndex = len(m.uiState.PromptHistory)
 	}
+
+	m.instantPrompt = m.panels.promptPanel.Value()
 
 	return m, nil
 }
