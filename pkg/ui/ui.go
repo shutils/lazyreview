@@ -54,6 +54,7 @@ type model struct {
 	client                 openai.Client
 	zoomState              ZoomState
 	focusState             FocusState
+	prevFocusState         FocusState
 	reviewState            ReviewState
 	reviewStack            []int
 	reviewStackDenominator int // reviewStackが0になるまでにたまったreviewの数

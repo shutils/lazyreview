@@ -156,6 +156,7 @@ func (m *model) BlurInstantPrompt() (tea.Model, tea.Cmd) {
 }
 
 func (m *model) focusPanel(panel FocusState) (tea.Model, tea.Cmd) {
+	m.prevFocusState = m.focusState
 	m.focusState = panel
 	cmd := func() tea.Msg {
 		return updateFocusPanelMsg{
@@ -203,6 +204,14 @@ func (m *model) FocusSourceListPanel() (tea.Model, tea.Cmd) {
 
 func (m *model) FocusContextEditPanel() (tea.Model, tea.Cmd) {
 	return m.focusPanel(ContextEditPanelFocus)
+}
+
+func (m *model) FocusHelpPanel() (tea.Model, tea.Cmd) {
+	return m.focusPanel(HelpPanelFocus)
+}
+
+func (m *model) BlurHelpPanel() (tea.Model, tea.Cmd) {
+	return m.focusPanel(m.prevFocusState)
 }
 
 func (m *model) ExitMessagePanel() (tea.Model, tea.Cmd) {
