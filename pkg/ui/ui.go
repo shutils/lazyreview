@@ -101,6 +101,13 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if action := m.handleKey(msg); action != nil {
 			return action()
 		}
+		if m.focusState == InstantPromptPanelFocus {
+			m.panels.promptPanel, cmd = m.panels.promptPanel.Update(msg)
+			cmds = append(cmds, cmd)
+			m.instantPrompt = m.panels.promptPanel.Value()
+			return m, tea.Batch(cmds...)
+		}
+
 	case tea.WindowSizeMsg:
 		return m.handleWindowSize(msg)
 	case reviewMsg:
@@ -172,6 +179,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 	case setPromptMsg:
 		m.panels.promptPanel.SetValue(msg.text)
+		m.instantPrompt = msg.text
 		return m, nil
 	case closedEditorMsg:
 		if msg.err != nil {
@@ -207,12 +215,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if m.focusState == ContextPanelFocus {
 		m.panels.contextListPanel, cmd = m.panels.contextListPanel.Update(msg)
 		cmds = append(cmds, cmd)
-	}
-
-	if m.focusState == InstantPromptPanelFocus {
-		m.panels.promptPanel, cmd = m.panels.promptPanel.Update(msg)
-		cmds = append(cmds, cmd)
-		m.instantPrompt = m.panels.promptPanel.Value()
 	}
 
 	return m, tea.Batch(cmds...)

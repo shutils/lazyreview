@@ -34,7 +34,7 @@ type panels struct {
 	sourceDetailPanel   viewport.Model
 	contextListPanel    list.Model
 	contextDetailPanel  viewport.Model
-	promptPanel         textarea.Model
+	promptPanel         promptPanel
 	spinner             spinner.Model
 	messagePanel        viewport.Model
 }
@@ -54,7 +54,7 @@ func NewPanels() panels {
 		sourceDetailPanel:   viewport.New(0, 0),
 		contextListPanel:    list.New([]list.Item{}, list.NewDefaultDelegate(), 0, 0),
 		contextDetailPanel:  viewport.New(0, 0),
-		promptPanel:         textarea.New(),
+		promptPanel:         NewPromptPanel(),
 		spinner:             spinner.New(),
 		messagePanel:        viewport.New(0, 0),
 	}
@@ -107,13 +107,13 @@ const (
 )
 
 const (
-	stateSummaryPanelHeight   = 1
-	configSummaryPanelHeight  = 1
-	reviewProgressPanelHeight = 1
-	contextListPanelMaxHeight = 5
-	instantPromptPanelHeight  = 5
-	sourceListPanelMaxHeight  = 5
-	footerHeight              = 1
+	stateSummaryPanelHeight     = 1
+	configSummaryPanelHeight    = 1
+	reviewProgressPanelHeight   = 1
+	contextListPanelMaxHeight   = 5
+	instantPromptPanelMinHeight = 1
+	sourceListPanelMaxHeight    = 5
+	footerHeight                = 1
 
 	listPaginationHeight = 2
 
@@ -221,7 +221,7 @@ func (m *model) makeView() string {
 	configContentPanel := m.buildPanel(m.panels.configDetailPanel.View(), m.getPanelStyle(Other), m.panels.configDetailPanel.Width, m.panels.configDetailPanel.Height, "Config content")
 	statePanel := m.buildPanel(m.panels.stateSummaryPanel.View(), m.getPanelStyle(StatePanelFocus), m.panels.stateSummaryPanel.Width, m.panels.stateSummaryPanel.Height, "State")
 	stateDetailPanel := m.buildPanel(m.panels.stateDetailPanel.View(), m.getPanelStyle(Other), m.panels.stateDetailPanel.Width, m.panels.stateDetailPanel.Height, "State detail")
-	instantPromptPanel := m.buildPanel(m.panels.promptPanel.View(), m.getPanelStyle(InstantPromptPanelFocus), m.panelSize.secondlyPanelWidth, instantPromptPanelHeight, "Instant prompt")
+	instantPromptPanel := m.buildPanel(m.panels.promptPanel.View(), m.getPanelStyle(InstantPromptPanelFocus), m.panelSize.secondlyPanelWidth, m.panels.promptPanel.Height(), "Instant prompt")
 	contextPanel := m.buildPanel(m.panels.contextListPanel.View(), m.getPanelStyle(ContextPanelFocus), m.panels.contextListPanel.Width(), m.panels.contextListPanel.Height(), "Context")
 	sourceListPanel := m.buildPanel(m.panels.sourceListPanel.View(), m.getPanelStyle(SourceListPanelFocus), m.panels.sourceListPanel.Width(), m.panels.sourceListPanel.Height(), "Source list")
 	sourceDetailPanel := m.buildPanel(m.panels.sourceDetailPanel.View(), m.getPanelStyle(Other), m.panels.sourceDetailPanel.Width, m.panels.sourceDetailPanel.Height, "Source detail")
@@ -353,6 +353,11 @@ func (m *model) calcAreaSize() (int, int) {
 	return primaryAreaWidth, secondlyAreaWidth
 }
 
+func (m *model) calcInstantPromptPanelHeight() {
+	height := math.Min(float64(m.winSize.height/2), float64(m.panels.promptPanel.LineCount()))
+	m.panels.promptPanel.SetHeight(int(height))
+}
+
 func (m *model) setPanelSize() (tea.Model, tea.Cmd) {
 	m.setPrimaryPanelSizes()
 	m.setSecondaryPanelSizes()
@@ -398,8 +403,9 @@ func (m *model) setPrimaryPanelSizes() {
 }
 
 func (m *model) setSecondaryPanelSizes() {
-	const (
-		instantPromptPanelOuterHeight = instantPromptPanelHeight + borderHeight*2
+	m.calcInstantPromptPanelHeight()
+	var (
+		instantPromptPanelOuterHeight = m.panels.promptPanel.Height() + borderHeight*2
 	)
 
 	_, secondlyAreaWidth := m.calcAreaSize()
@@ -425,7 +431,6 @@ func (m *model) setSecondaryPanelSizes() {
 	m.panels.itemReviewPanel.Height = m.winSize.height - instantPromptPanelOuterHeight - borderHeight*2 - footerHeight
 
 	m.panels.promptPanel.SetWidth(secondlyAreaWidth - borderWidth*2)
-	m.panels.promptPanel.SetHeight(instantPromptPanelHeight)
 
 	m.panels.reviewStackPanel.Width = secondlyAreaWidth - borderWidth*2
 	m.panels.reviewStackPanel.Height = m.winSize.height - borderHeight*2 - footerHeight
@@ -525,4 +530,79 @@ func (l itemListPanel) NewDefaultNarrowDelegate() list.DefaultDelegate {
 	delegate.SetHeight(1)
 	delegate.SetSpacing(0)
 	return delegate
+}
+
+type promptPanel struct {
+	width, height int
+	MaxHeight     int
+	model         textarea.Model
+}
+
+func NewPromptPanel() promptPanel {
+	p := promptPanel{}
+	p.model = textarea.New()
+	p.model.SetHeight(instantPromptPanelMinHeight)
+	p.height = instantPromptPanelMinHeight
+	return p
+}
+
+func (p *promptPanel) UpdateSize() (promptPanel, tea.Cmd) {
+	p.SetWidth(p.width)
+	p.SetHeight(p.height)
+	return *p, nil
+}
+
+func (p *promptPanel) SetWidth(w int) {
+	p.width = w
+	p.model.SetWidth(w)
+}
+
+func (p *promptPanel) SetHeight(h int) {
+	p.height = h
+	p.model.SetHeight(p.height)
+}
+
+func (p *promptPanel) Width() int {
+	return p.width
+}
+
+func (p *promptPanel) Height() int {
+	return p.height
+}
+
+func (p *promptPanel) SetValue(content string) {
+	p.model.SetValue(content)
+	p.SetHeight(p.model.LineCount())
+}
+
+func (p *promptPanel) LineCount() int {
+	return p.model.LineCount()
+}
+
+func (p *promptPanel) Focus() {
+	p.model.Focus()
+}
+
+func (p *promptPanel) Blur() {
+	p.model.Blur()
+}
+
+func (p *promptPanel) Value() string {
+	return p.model.Value()
+}
+
+func (p *promptPanel) Init() tea.Cmd {
+	return nil
+}
+
+func (p *promptPanel) Update(msg tea.Msg) (promptPanel, tea.Cmd) {
+	var cmd tea.Cmd
+	p.model, cmd = p.model.Update(msg)
+	p.SetHeight(p.model.LineCount())
+	p.model.SetHeight(p.height)
+	return *p, cmd
+}
+
+func (p *promptPanel) View() string {
+	return p.model.View()
 }
