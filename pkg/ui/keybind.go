@@ -20,6 +20,7 @@ type keyMaps struct {
 	contextEditKeyMap
 	sourceListKeyMap
 	messageKeyMap
+	helpKeyMap
 }
 
 func DefaultKeyMap() keyMaps {
@@ -36,21 +37,23 @@ func DefaultKeyMap() keyMaps {
 		contextEditKeyMap:   GetContextEditKeymap(),
 		sourceListKeyMap:    GetSourceListKeymap(),
 		messageKeyMap:       GetMessageKeymap(),
+		helpKeyMap:          GetHelpKeymap(),
 	}
 }
 
 type globalKeyMap struct {
 	Quit      key.Binding
 	ZoomPanel key.Binding
+	OpenHelp  key.Binding
 }
 
 func (k globalKeyMap) ShortHelp() []key.Binding {
-	return []key.Binding{k.Quit, k.ZoomPanel}
+	return []key.Binding{k.Quit, k.ZoomPanel, k.OpenHelp}
 }
 
 func (k globalKeyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{
-		{k.Quit, k.ZoomPanel},
+		{k.Quit, k.ZoomPanel, k.OpenHelp},
 	}
 }
 
@@ -102,6 +105,10 @@ func GetMessageKeymap() messageKeyMap {
 	return MessageKeyMap
 }
 
+func GetHelpKeymap() helpKeyMap {
+	return HelpKeyMap
+}
+
 var GlobalKeyMap = globalKeyMap{
 	Quit: key.NewBinding(
 		key.WithKeys("ctrl+c"),
@@ -110,6 +117,10 @@ var GlobalKeyMap = globalKeyMap{
 	ZoomPanel: key.NewBinding(
 		key.WithKeys("+"),
 		key.WithHelp("+", "zoom"),
+	),
+	OpenHelp: key.NewBinding(
+		key.WithKeys("?"),
+		key.WithHelp("?", "help"),
 	),
 }
 
@@ -694,6 +705,31 @@ var MessageKeyMap = messageKeyMap{
 	),
 }
 
+type helpKeyMap struct {
+	Return key.Binding
+}
+
+func (k helpKeyMap) ShortHelp() []key.Binding {
+	return []key.Binding{
+		k.Return,
+	}
+}
+
+func (k helpKeyMap) FullHelp() [][]key.Binding {
+	return [][]key.Binding{
+		{
+			k.Return,
+		},
+	}
+}
+
+var HelpKeyMap = helpKeyMap{
+	Return: key.NewBinding(
+		key.WithKeys("esc"),
+		key.WithHelp("esc", "return"),
+	),
+}
+
 func MakeBottomLine(globalHelp string, panelHelp string) string {
 	return lipgloss.JoinHorizontal(lipgloss.Left, globalHelp, " | ", panelHelp)
 }
@@ -706,6 +742,8 @@ func (m *model) handleGlobalKey(msg tea.Msg) func() (tea.Model, tea.Cmd) {
 			return m.Quit
 		case key.Matches(msg, m.keyMaps.globalKeyMap.ZoomPanel):
 			return m.ZoomPanel
+		case key.Matches(msg, m.keyMaps.globalKeyMap.OpenHelp):
+			return m.FocusHelpPanel
 		}
 	}
 	return nil
@@ -936,6 +974,17 @@ func (m *model) handleMessageKey(msg tea.Msg) func() (tea.Model, tea.Cmd) {
 	return nil
 }
 
+func (m *model) handleHelpKey(msg tea.Msg) func() (tea.Model, tea.Cmd) {
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		switch {
+		case key.Matches(msg, m.keyMaps.helpKeyMap.Return):
+			return m.BlurHelpPanel
+		}
+	}
+	return nil
+}
+
 func (m *model) handleKey(msg tea.Msg) func() (tea.Model, tea.Cmd) {
 	if action := m.handleGlobalKey(msg); action != nil {
 		return func() (tea.Model, tea.Cmd) {
@@ -1006,6 +1055,12 @@ func (m *model) handleKey(msg tea.Msg) func() (tea.Model, tea.Cmd) {
 		}
 	case MessagePanelFocus:
 		if action := m.handleMessageKey(msg); action != nil {
+			return func() (tea.Model, tea.Cmd) {
+				return action()
+			}
+		}
+	case HelpPanelFocus:
+		if action := m.handleHelpKey(msg); action != nil {
 			return func() (tea.Model, tea.Cmd) {
 				return action()
 			}

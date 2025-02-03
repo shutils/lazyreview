@@ -38,6 +38,7 @@ type panels struct {
 	promptPanel         promptPanel
 	spinner             spinner.Model
 	messagePanel        simpleViewPortPanel
+	helpPanel           simpleViewPortPanel
 }
 
 func NewPanels() panels {
@@ -59,6 +60,7 @@ func NewPanels() panels {
 		promptPanel:         NewPromptPanel("Instant prompt"),
 		spinner:             spinner.New(),
 		messagePanel:        NewSimpleViewPort("Message"),
+		helpPanel:           NewSimpleViewPort("Help"),
 	}
 
 	p.setInitSetting()
@@ -86,6 +88,7 @@ const (
 	ContextEditPanelFocus
 	SourceListPanelFocus
 	MessagePanelFocus
+	HelpPanelFocus
 	Other
 )
 
@@ -183,20 +186,33 @@ func (m *model) makeView() string {
 	m.resetHighLightPanel()
 	m.setHighLightPanel()
 	m.setPanelSize()
+
+	currKeyMap := m.getCurrKeyMap()
+
+	helpModel := help.New()
+	globalHelp := helpModel.View(m.keyMaps.globalKeyMap)
+	currHelp := helpModel.View(currKeyMap)
+	helpString := MakeBottomLine(globalHelp, currHelp)
+
 	if m.message != "" {
 		m.focusState = MessagePanelFocus
 		m.panels.messagePanel.SetContent(m.message)
 		return m.panels.messagePanel.View()
 	}
 
+	if m.focusState == HelpPanelFocus {
+		prevKeyMap := m.getPrevKeyMap()
+		helpFullModel := help.New()
+		fullHelp := helpFullModel.FullHelpView(m.keyMaps.globalKeyMap.FullHelp())
+		fullHelp = "Global" + "\n" + fullHelp + "\n\n" + "Local" + "\n" + helpFullModel.FullHelpView(prevKeyMap.FullHelp())
+		m.panels.helpPanel.SetContent(fullHelp)
+		return m.panels.helpPanel.View()
+	}
+
 	state := "/"
 	if m.reviewState == Reviewing {
 		state = m.panels.spinner.View()
 	}
-
-	helpModel := help.New()
-	globalHelp := helpModel.View(m.keyMaps.globalKeyMap)
-	helpString := m.getHelpString(helpModel, globalHelp)
 
 	listPanel := m.panels.itemListPanel.View()
 	contentPanel := m.panels.itemPreviewPanel.View()
@@ -235,30 +251,40 @@ func (m *model) makeView() string {
 	)
 }
 
-func (m *model) getHelpString(helpModel help.Model, globalHelp string) string {
-	switch m.focusState {
+func (m *model) getCurrKeyMap() help.KeyMap {
+	return m.getPanelKeyMap(m.focusState)
+}
+
+func (m *model) getPrevKeyMap() help.KeyMap {
+	return m.getPanelKeyMap(m.prevFocusState)
+}
+
+func (m *model) getPanelKeyMap(focus FocusState) help.KeyMap {
+	switch focus {
 	case ItemListPanelFocus:
-		return MakeBottomLine(globalHelp, helpModel.View(m.keyMaps.listKeyMap))
+		return m.keyMaps.listKeyMap
 	case ContentPanelFocus:
-		return MakeBottomLine(globalHelp, helpModel.View(m.keyMaps.contentKeyMap))
+		return m.keyMaps.contentKeyMap
 	case ReviewPanelFocus:
-		return MakeBottomLine(globalHelp, helpModel.View(m.keyMaps.reviewKeyMap))
+		return m.keyMaps.reviewKeyMap
 	case ReviewStackProgressPanelFocus:
-		return MakeBottomLine(globalHelp, helpModel.View(m.keyMaps.reviewStackKeyMap))
+		return m.keyMaps.reviewStackKeyMap
 	case InstantPromptPanelFocus:
-		return MakeBottomLine(globalHelp, helpModel.View(m.keyMaps.promptKeyMap))
+		return m.keyMaps.promptKeyMap
 	case ConfigSummaryPanelFocus:
-		return MakeBottomLine(globalHelp, helpModel.View(m.keyMaps.configSummaryKeyMap))
+		return m.keyMaps.configSummaryKeyMap
 	case StatePanelFocus:
-		return MakeBottomLine(globalHelp, helpModel.View(m.keyMaps.stateKeyMap))
+		return m.keyMaps.stateKeyMap
 	case ContextPanelFocus:
-		return MakeBottomLine(globalHelp, helpModel.View(m.keyMaps.contextKeyMap))
+		return m.keyMaps.contextKeyMap
 	case SourceListPanelFocus:
-		return MakeBottomLine(globalHelp, helpModel.View(m.keyMaps.sourceListKeyMap))
+		return m.keyMaps.sourceListKeyMap
 	case ContextEditPanelFocus:
-		return MakeBottomLine(globalHelp, helpModel.View(m.keyMaps.contextEditKeyMap))
+		return m.keyMaps.contextEditKeyMap
+	case HelpPanelFocus:
+		return m.keyMaps.helpKeyMap
 	default:
-		return ""
+		return m.keyMaps.helpKeyMap
 	}
 }
 
@@ -347,8 +373,11 @@ func (m *model) setPanelSize() (tea.Model, tea.Cmd) {
 	m.setPrimaryPanelSizes()
 	m.setSecondaryPanelSizes()
 
-	m.panels.messagePanel.SetWidth(m.winSize.width)
-	m.panels.messagePanel.SetHeight(m.winSize.height)
+	m.panels.messagePanel.SetWidth(m.winSize.width - borderWidth*2)
+	m.panels.messagePanel.SetHeight(m.winSize.height - borderHeight*2)
+
+	m.panels.helpPanel.SetWidth(m.winSize.width - borderWidth*2)
+	m.panels.helpPanel.SetHeight(m.winSize.height - borderHeight*2)
 	return m, nil
 }
 
