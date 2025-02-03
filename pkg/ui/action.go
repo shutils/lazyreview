@@ -56,6 +56,36 @@ func (m *model) ToggleAiContext() (tea.Model, tea.Cmd) {
 	}
 }
 
+func (m *model) EditContext() (tea.Model, tea.Cmd) {
+	contextItem, ok := m.panels.contextListPanel.SelectedItem().(contextItem)
+	if !ok {
+		return *m, nil
+	}
+	m.panels.contextEditPanel.SetValue(contextItem.content)
+	m.FocusContextEditPanel()
+	m.panels.contextEditPanel.Focus()
+	return *m, nil
+}
+
+func (m *model) SaveEditingContext() (tea.Model, tea.Cmd) {
+	item, ok := m.panels.contextListPanel.SelectedItem().(contextItem)
+	if !ok {
+		return *m, nil
+	}
+	index := findIndex(m.panels.contextListPanel.Items(), item.id)
+	text := m.panels.contextEditPanel.Value()
+	newContextItem := contextItem{
+		title:      item.title,
+		param:      item.param,
+		sourceName: item.sourceName,
+		id:         item.id,
+		content:    text,
+		isEdited:   true,
+	}
+	m.panels.contextListPanel.SetItem(index, newContextItem)
+	return *m, nil
+}
+
 func (m *model) ReloadItems() (tea.Model, tea.Cmd) {
 	if m.panels.itemListPanel.model.FilterState() == list.Unfiltered {
 		m.panels.itemListPanel.model.SetItems(getItems(m.conf, m.reviewList))
@@ -169,6 +199,10 @@ func (m *model) FocusContextPanel() (tea.Model, tea.Cmd) {
 
 func (m *model) FocusSourceListPanel() (tea.Model, tea.Cmd) {
 	return m.focusPanel(SourceListPanelFocus)
+}
+
+func (m *model) FocusContextEditPanel() (tea.Model, tea.Cmd) {
+	return m.focusPanel(ContextEditPanelFocus)
 }
 
 func (m *model) ExitMessagePanel() (tea.Model, tea.Cmd) {

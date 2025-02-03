@@ -15,8 +15,9 @@ import (
 
 // Tmp file name
 const (
-	tmpReviewFileName = "tmp_review.md"
-	tmpPromptFileName = "tmp_prompt.md"
+	tmpReviewFileName  = "tmp_review.md"
+	tmpPromptFileName  = "tmp_prompt.md"
+	tmpContextFileName = "tmp_context.txt"
 )
 
 // ModelCost represents the cost associated with AI model usage.
@@ -95,26 +96,27 @@ const projectName = "lazyreview"
 
 // Config holds the configuration details for the application.
 type Config struct {
-	ConfigPath    string        `toml:"-"`
-	Key           string        `toml:"key"`
-	Endpoint      string        `toml:"endpoint"`
-	Version       string        `toml:"version"`
-	Model         string        `toml:"model"`
-	ModelCost     ModelCost     `toml:"modelCost"`
-	Target        string        `toml:"target"`
-	Output        string        `toml:"output"`
-	State         string        `toml:"state"`
-	Ignores       []string      `toml:"ignores"`
-	Prompt        string        `toml:"prompt"`
-	Type          string        `toml:"type"`
-	Collector     StringOrSlice `toml:"collector"`
-	Previewer     StringOrSlice `toml:"previewer"`
-	Glamour       string        `toml:"glamour"`
-	MaxTokens     int           `toml:"max_tokens"`
-	Opener        StringOrSlice `toml:"opener"`
-	Sources       []Source      `toml:"sources"`
-	TmpReviewPath string        `toml:"-"`
-	TmpPromptPath string        `toml:"-"`
+	ConfigPath     string        `toml:"-"`
+	Key            string        `toml:"key"`
+	Endpoint       string        `toml:"endpoint"`
+	Version        string        `toml:"version"`
+	Model          string        `toml:"model"`
+	ModelCost      ModelCost     `toml:"modelCost"`
+	Target         string        `toml:"target"`
+	Output         string        `toml:"output"`
+	State          string        `toml:"state"`
+	Ignores        []string      `toml:"ignores"`
+	Prompt         string        `toml:"prompt"`
+	Type           string        `toml:"type"`
+	Collector      StringOrSlice `toml:"collector"`
+	Previewer      StringOrSlice `toml:"previewer"`
+	Glamour        string        `toml:"glamour"`
+	MaxTokens      int           `toml:"max_tokens"`
+	Opener         StringOrSlice `toml:"opener"`
+	Sources        []Source      `toml:"sources"`
+	TmpReviewPath  string        `toml:"-"`
+	TmpPromptPath  string        `toml:"-"`
+	TmpContextPath string        `toml:"-"`
 }
 
 // loadConfig reads the configuration from the specified file.
@@ -156,6 +158,7 @@ func NewConfig() Config {
 	c.State = setDefaultState(c.State)
 	c.TmpReviewPath = path.Join(xdg.CacheHome, projectName, tmpReviewFileName)
 	c.TmpPromptPath = path.Join(xdg.CacheHome, projectName, tmpPromptFileName)
+	c.TmpContextPath = path.Join(xdg.CacheHome, projectName, tmpContextFileName)
 
 	return c
 }

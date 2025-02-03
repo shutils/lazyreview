@@ -28,6 +28,16 @@ func (i listItem) Title() string       { return i.title }
 func (i listItem) Description() string { return i.param }
 func (i listItem) FilterValue() string { return i.param }
 
+type contextItem struct {
+	title, param, sourceName, id string
+	content                      string
+	isEdited                     bool
+}
+
+func (i contextItem) Title() string       { return i.title }
+func (i contextItem) Description() string { return i.param }
+func (i contextItem) FilterValue() string { return i.param }
+
 type updateSourceListMsg struct {
 }
 
@@ -106,6 +116,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.instantPrompt = m.panels.promptPanel.Value()
 			return m, tea.Batch(cmds...)
 		}
+		if m.focusState == ContextEditPanelFocus {
+			m.panels.contextEditPanel, cmd = m.panels.contextEditPanel.Update(msg)
+			cmds = append(cmds, cmd)
+			return m, tea.Batch(cmds...)
+		}
 
 	case tea.WindowSizeMsg:
 		return m.handleWindowSize(msg)
@@ -179,6 +194,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.panels.promptPanel.SetValue(msg.text)
 		m.instantPrompt = msg.text
 		return m, nil
+	case setEditedContextMsg:
+		m.panels.contextEditPanel.SetValue(msg.text)
+		savedModel, cmd := m.SaveEditingContext()
+		m = savedModel.(model)
+		return m, cmd
 	case closedEditorMsg:
 		if msg.err != nil {
 			return m, func() tea.Msg {
@@ -269,9 +289,18 @@ func (m *model) addContextStack(id string) (tea.Model, tea.Cmd) {
 		return *m, nil
 	}
 	item := m.panels.itemListPanel.model.Items()[index]
+	listItem := item.(listItem)
 
+	contextItem := contextItem{
+		title:      listItem.title,
+		param:      listItem.param,
+		sourceName: listItem.sourceName,
+		id:         listItem.id,
+		content:    previewContent(listItem, m.conf.Sources),
+		isEdited:   false,
+	}
 	contextList := m.panels.contextListPanel.Items()
-	contextList = append(contextList, item)
+	contextList = append(contextList, contextItem)
 	m.panels.contextListPanel.SetItems(contextList)
 	return *m, nil
 }

@@ -17,6 +17,7 @@ type keyMaps struct {
 	configSummaryKeyMap
 	stateKeyMap
 	contextKeyMap
+	contextEditKeyMap
 	sourceListKeyMap
 	messageKeyMap
 }
@@ -32,6 +33,7 @@ func DefaultKeyMap() keyMaps {
 		configSummaryKeyMap: GetConfigSummaryKeymap(),
 		stateKeyMap:         GetStateKeymap(),
 		contextKeyMap:       GetContextKeymap(),
+		contextEditKeyMap:   GetContextEditKeymap(),
 		sourceListKeyMap:    GetSourceListKeymap(),
 		messageKeyMap:       GetMessageKeymap(),
 	}
@@ -86,6 +88,10 @@ func GetStateKeymap() stateKeyMap {
 
 func GetContextKeymap() contextKeyMap {
 	return ContextKeyMap
+}
+
+func GetContextEditKeymap() contextEditKeyMap {
+	return ContextEditKeyMap
 }
 
 func GetSourceListKeymap() sourceListKeyMap {
@@ -528,17 +534,19 @@ var StateKeyMap = stateKeyMap{
 }
 
 type contextKeyMap struct {
-	FocusItemListPanel   key.Binding
-	FocusSourceListPanel key.Binding
-	RemoveContext        key.Binding
-	CursorDown           key.Binding
-	CursorUp             key.Binding
+	FocusItemListPanel    key.Binding
+	FocusSourceListPanel  key.Binding
+	FocusContextEditPanel key.Binding
+	RemoveContext         key.Binding
+	CursorDown            key.Binding
+	CursorUp              key.Binding
 }
 
 func (k contextKeyMap) ShortHelp() []key.Binding {
 	return []key.Binding{
 		k.FocusItemListPanel,
 		k.FocusSourceListPanel,
+		k.FocusContextEditPanel,
 		k.RemoveContext,
 		k.CursorDown,
 		k.CursorUp,
@@ -549,6 +557,7 @@ func (k contextKeyMap) FullHelp() [][]key.Binding {
 		{
 			k.FocusItemListPanel,
 			k.FocusSourceListPanel,
+			k.FocusContextEditPanel,
 			k.RemoveContext,
 			k.CursorDown,
 			k.CursorUp,
@@ -565,6 +574,10 @@ var ContextKeyMap = contextKeyMap{
 		key.WithKeys("l"),
 		key.WithHelp("l", "focus source list"),
 	),
+	FocusContextEditPanel: key.NewBinding(
+		key.WithKeys("i", "e"),
+		key.WithHelp("i/e", "focus context edit"),
+	),
 	RemoveContext: key.NewBinding(
 		key.WithKeys("d"),
 		key.WithHelp("d", "remove context"),
@@ -576,6 +589,37 @@ var ContextKeyMap = contextKeyMap{
 	CursorUp: key.NewBinding(
 		key.WithKeys("K"),
 		key.WithHelp("shift+k", "down"),
+	),
+}
+
+type contextEditKeyMap struct {
+	Blur       key.Binding
+	Save       key.Binding
+	OpenEditor key.Binding
+}
+
+func (k contextEditKeyMap) ShortHelp() []key.Binding {
+	return []key.Binding{k.Blur, k.Save, k.OpenEditor}
+}
+
+func (k contextEditKeyMap) FullHelp() [][]key.Binding {
+	return [][]key.Binding{
+		{k.Blur, k.Save, k.OpenEditor},
+	}
+}
+
+var ContextEditKeyMap = contextEditKeyMap{
+	Blur: key.NewBinding(
+		key.WithKeys("esc"),
+		key.WithHelp("esc", "blur"),
+	),
+	Save: key.NewBinding(
+		key.WithKeys("ctrl+s"),
+		key.WithHelp("ctrl+s", "save"),
+	),
+	OpenEditor: key.NewBinding(
+		key.WithKeys("ctrl+e"),
+		key.WithHelp("ctrl+e", "edit with editor"),
 	),
 }
 
@@ -736,6 +780,21 @@ func (m *model) handleContentKey(msg tea.Msg) func() (tea.Model, tea.Cmd) {
 	return nil
 }
 
+func (m *model) handleContextEditKey(msg tea.Msg) func() (tea.Model, tea.Cmd) {
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		switch {
+		case key.Matches(msg, m.keyMaps.contextEditKeyMap.Blur):
+			return m.FocusContextPanel
+		case key.Matches(msg, m.keyMaps.contextEditKeyMap.Save):
+			return m.SaveEditingContext
+		case key.Matches(msg, m.keyMaps.contextEditKeyMap.OpenEditor):
+			return m.OpenContextInEditor
+		}
+	}
+	return nil
+}
+
 func (m *model) handleReviewKey(msg tea.Msg) func() (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
@@ -844,7 +903,7 @@ func (m *model) handleContextKey(msg tea.Msg) func() (tea.Model, tea.Cmd) {
 			return m.FocusSourceListPanel
 		case key.Matches(msg, m.keyMaps.contextKeyMap.RemoveContext):
 			currItem := m.panels.contextListPanel.SelectedItem()
-			currListItem, ok := currItem.(listItem)
+			currListItem, ok := currItem.(contextItem)
 			if !ok {
 				return func() (tea.Model, tea.Cmd) {
 					return m, nil
@@ -857,6 +916,8 @@ func (m *model) handleContextKey(msg tea.Msg) func() (tea.Model, tea.Cmd) {
 			return m.ContextDetailCursorDown
 		case key.Matches(msg, m.keyMaps.contextKeyMap.CursorUp):
 			return m.ContextDetailCursorUp
+		case key.Matches(msg, m.keyMaps.contextKeyMap.FocusContextEditPanel):
+			return m.EditContext
 		}
 	}
 	return nil
@@ -891,6 +952,12 @@ func (m *model) handleKey(msg tea.Msg) func() (tea.Model, tea.Cmd) {
 		}
 	case ContentPanelFocus:
 		if action := m.handleContentKey(msg); action != nil {
+			return func() (tea.Model, tea.Cmd) {
+				return action()
+			}
+		}
+	case ContextEditPanelFocus:
+		if action := m.handleContextEditKey(msg); action != nil {
 			return func() (tea.Model, tea.Cmd) {
 				return action()
 			}

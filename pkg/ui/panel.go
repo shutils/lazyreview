@@ -34,6 +34,7 @@ type panels struct {
 	sourceDetailPanel   simpleViewPortPanel
 	contextListPanel    compactListPanel
 	contextDetailPanel  simpleViewPortPanel
+	contextEditPanel    promptPanel
 	promptPanel         promptPanel
 	spinner             spinner.Model
 	messagePanel        simpleViewPortPanel
@@ -54,6 +55,7 @@ func NewPanels() panels {
 		sourceDetailPanel:   NewSimpleViewPort("Source detail"),
 		contextListPanel:    NewCompactListPanel("Context"),
 		contextDetailPanel:  NewSimpleViewPort("Context detail"),
+		contextEditPanel:    NewPromptPanel("Context edit"),
 		promptPanel:         NewPromptPanel("Instant prompt"),
 		spinner:             spinner.New(),
 		messagePanel:        NewSimpleViewPort("Message"),
@@ -81,6 +83,7 @@ const (
 	ConfigSummaryPanelFocus
 	StatePanelFocus
 	ContextPanelFocus
+	ContextEditPanelFocus
 	SourceListPanelFocus
 	MessagePanelFocus
 	Other
@@ -208,6 +211,7 @@ func (m *model) makeView() string {
 	sourceListPanel := m.panels.sourceListPanel.View()
 	sourceDetailPanel := m.panels.sourceDetailPanel.View()
 	contextDetailPanel := m.panels.contextDetailPanel.View()
+	contextEditPanel := m.panels.contextEditPanel.View()
 	reviewProgressPanel := m.panels.reviewProgressPanel.View()
 
 	primaryPanels := m.buildPrimaryPanels(statePanel, listPanel, reviewProgressPanel, contextPanel, sourceListPanel, configPanel)
@@ -227,6 +231,7 @@ func (m *model) makeView() string {
 		contextDetailPanel,
 		reviewStackPanel,
 		bottomLine,
+		contextEditPanel,
 	)
 }
 
@@ -250,12 +255,15 @@ func (m *model) getHelpString(helpModel help.Model, globalHelp string) string {
 		return MakeBottomLine(globalHelp, helpModel.View(m.keyMaps.contextKeyMap))
 	case SourceListPanelFocus:
 		return MakeBottomLine(globalHelp, helpModel.View(m.keyMaps.sourceListKeyMap))
+	case ContextEditPanelFocus:
+		return MakeBottomLine(globalHelp, helpModel.View(m.keyMaps.contextEditKeyMap))
 	default:
 		return ""
 	}
 }
 
-func (m *model) buildWindowBasedOnFocus(primaryPanels,
+func (m *model) buildWindowBasedOnFocus(
+	primaryPanels,
 	configContentPanel,
 	stateDetailPanel,
 	reviewCombiPanels,
@@ -264,7 +272,8 @@ func (m *model) buildWindowBasedOnFocus(primaryPanels,
 	sourceDetailPanel,
 	contextDetailPanel,
 	reviewStackPanel,
-	bottomLine string,
+	bottomLine,
+	contextEditPanel string,
 ) string {
 	switch m.focusState {
 	case ConfigSummaryPanelFocus:
@@ -283,6 +292,8 @@ func (m *model) buildWindowBasedOnFocus(primaryPanels,
 		return m.buildWindow(primaryPanels, contextDetailPanel, bottomLine)
 	case ReviewStackProgressPanelFocus:
 		return m.buildWindow(primaryPanels, reviewStackPanel, bottomLine)
+	case ContextEditPanelFocus:
+		return m.buildWindow(primaryPanels, contextEditPanel, bottomLine)
 	default:
 		return ""
 	}
@@ -361,6 +372,8 @@ func (m *model) setHighLightPanel() {
 		m.panels.sourceListPanel.SetHighlight(true)
 	case ContextPanelFocus:
 		m.panels.contextListPanel.SetHighlight(true)
+	case ContextEditPanelFocus:
+		m.panels.contextEditPanel.SetHighlight(true)
 	}
 }
 
@@ -370,6 +383,7 @@ func (m *model) resetHighLightPanel() {
 	m.panels.stateSummaryPanel.SetHighlight(false)
 	m.panels.itemPreviewPanel.SetHighlight(false)
 	m.panels.itemReviewPanel.SetHighlight(false)
+	m.panels.contextEditPanel.SetHighlight(false)
 }
 
 func (m *model) setPrimaryPanelSizes() {
@@ -451,6 +465,9 @@ func (m *model) setSecondaryPanelSizes() {
 
 	m.panels.contextDetailPanel.SetWidth(secondlyAreaWidth - borderWidth*2)
 	m.panels.contextDetailPanel.SetHeight(m.winSize.height - borderHeight*2 - footerHeight)
+
+	m.panels.contextEditPanel.SetWidth(secondlyAreaWidth - borderWidth*2)
+	m.panels.contextEditPanel.SetHeight(m.winSize.height - borderHeight*2 - footerHeight)
 
 	m.panels.reviewStackPanel.SetWidth(secondlyAreaWidth - borderWidth*2)
 	m.panels.reviewStackPanel.SetHeight(m.winSize.height - borderHeight*2 - footerHeight)
@@ -599,7 +616,9 @@ func NewPromptPanel(title string) promptPanel {
 	p := promptPanel{}
 	p.model = textarea.New()
 	p.model.SetHeight(instantPromptPanelMinHeight)
+	p.model.CharLimit = 0
 	p.height = instantPromptPanelMinHeight
+	p.title = title
 	return p
 }
 
@@ -861,6 +880,10 @@ func (l *compactListPanel) SelectedItem() list.Item {
 
 func (l *compactListPanel) SetShowPagination(show bool) {
 	l.model.SetShowPagination(show)
+}
+
+func (l *compactListPanel) SetItem(index int, item list.Item) tea.Cmd {
+	return l.model.SetItem(index, item)
 }
 
 func (l *compactListPanel) SetItems(items []list.Item) {
