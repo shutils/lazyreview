@@ -20,6 +20,11 @@ import (
 type ZoomState int
 type FocusState int
 
+const (
+	itemReviewPanelDefaultTitle  = "Review"
+	itemPreviewPanelDefaultTitle = "Content"
+)
+
 type panels struct {
 	itemListPanel       itemListPanel
 	itemPreviewPanel    simpleViewPortPanel
@@ -45,7 +50,7 @@ func NewPanels() panels {
 	p := panels{
 		itemListPanel:       NewItemListPanel("Items"),
 		itemPreviewPanel:    NewSimpleViewPort("Content"),
-		itemReviewPanel:     NewSimpleViewPort("Review"),
+		itemReviewPanel:     NewSimpleViewPort(itemReviewPanelDefaultTitle),
 		stateSummaryPanel:   NewSimpleViewPort("State"),
 		stateDetailPanel:    NewSimpleViewPort("State detail"),
 		configSummaryPanel:  NewSimpleViewPort("Config"),
@@ -214,9 +219,17 @@ func (m *model) makeView() string {
 		state = m.panels.spinner.View()
 	}
 
+	// Display the param of the displayed content in the title
+	// For zoom view
+	listItem := m.panels.itemListPanel.SelectedItem()
+	if listItem.param != "" {
+		m.panels.itemReviewPanel.SetTitle(itemReviewPanelDefaultTitle + " ─ " + listItem.param)
+		m.panels.itemPreviewPanel.SetTitle(itemPreviewPanelDefaultTitle + " ─ " + listItem.param)
+	}
+
 	listPanel := m.panels.itemListPanel.View()
-	contentPanel := m.panels.itemPreviewPanel.View()
-	reviewPanel := m.panels.itemReviewPanel.View()
+	itemPreviewPanel := m.panels.itemPreviewPanel.View()
+	itemReviewPanel := m.panels.itemReviewPanel.View()
 	reviewStackPanel := m.panels.reviewStackPanel.View()
 	configPanel := m.panels.configSummaryPanel.View()
 	configContentPanel := m.panels.configDetailPanel.View()
@@ -231,9 +244,9 @@ func (m *model) makeView() string {
 	reviewProgressPanel := m.panels.reviewProgressPanel.View()
 
 	primaryPanels := m.buildPrimaryPanels(statePanel, listPanel, reviewProgressPanel, contextPanel, sourceListPanel, configPanel)
-	reviewCombiPanels := m.buildReviewCombiPanels(contentPanel, reviewPanel, instantPromptPanel)
-	contentPanels := m.buildContentPanels(contentPanel, instantPromptPanel)
-	reviewPanels := m.buildReviewPanels(reviewPanel, instantPromptPanel)
+	reviewCombiPanels := m.buildReviewCombiPanels(itemPreviewPanel, itemReviewPanel, instantPromptPanel)
+	contentPanels := m.buildContentPanels(itemPreviewPanel, instantPromptPanel)
+	reviewPanels := m.buildReviewPanels(itemReviewPanel, instantPromptPanel)
 
 	bottomLine := lipgloss.JoinHorizontal(lipgloss.Left, state, " ", helpString)
 	return m.buildWindowBasedOnFocus(
@@ -618,6 +631,14 @@ func (l *itemListPanel) Init() tea.Cmd {
 	return nil
 }
 
+func (l *itemListPanel) SelectedItem() listItem {
+	item := l.model.SelectedItem()
+	if listItem, ok := item.(listItem); ok {
+		return listItem
+	}
+	return listItem{}
+}
+
 func (l *itemListPanel) Update(msg tea.Msg) (itemListPanel, tea.Cmd) {
 
 	var cmd tea.Cmd
@@ -755,6 +776,10 @@ func (v *simpleViewPortPanel) Width() int {
 
 func (v *simpleViewPortPanel) Height() int {
 	return v.height
+}
+
+func (v *simpleViewPortPanel) SetTitle(title string) {
+	v.title = title
 }
 
 func (v *simpleViewPortPanel) SetContent(content string) {
