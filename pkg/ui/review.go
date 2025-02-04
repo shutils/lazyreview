@@ -134,17 +134,18 @@ func (m *model) reviewContent() tea.Cmd {
 				review = chat.Choices[0].Message.Content
 			}
 
+			m.state = state.LoadState(m.stateFile)
 			if m.instantPrompt != "" {
-				m.uiState.PromptHistory = append(m.uiState.PromptHistory, m.instantPrompt)
+				m.state.PromptHistory = append(m.state.PromptHistory, m.instantPrompt)
 			}
-			promptToken := m.uiState.Usage.PromptTokens + chat.Usage.PromptTokens
-			completionTokens := m.uiState.Usage.CompletionTokens + chat.Usage.CompletionTokens
-			m.uiState.Usage = state.Usage{
+			promptToken := m.state.Usage.PromptTokens + chat.Usage.PromptTokens
+			completionTokens := m.state.Usage.CompletionTokens + chat.Usage.CompletionTokens
+			m.state.Usage = state.Usage{
 				PromptTokens:     promptToken,
 				CompletionTokens: completionTokens,
 			}
+			state.SaveState(m.stateFile, m.state)
 			m.UpdateState()
-			state.SaveState(m.stateFile, m.uiState)
 		}
 		return reviewMsg{
 			id:      selectedItem.id,

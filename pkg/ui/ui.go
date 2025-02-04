@@ -59,7 +59,6 @@ type model struct {
 	reviewStack            []int
 	reviewStackDenominator int // reviewStackが0になるまでにたまったreviewの数
 	instantPrompt          string
-	uiState                state.State
 	currentHistoryIndex    int
 	state                  state.State
 	message                string
@@ -80,9 +79,8 @@ func NewUi(conf config.Config, client openai.Client) model {
 		reviewState:         NoAction,
 		reviewStack:         []int{},
 		instantPrompt:       "",
-		uiState:             state.LoadState(conf.State),
 		currentHistoryIndex: 0,
-		state:               state.State{},
+		state:               state.LoadState(conf.State),
 		message:             "",
 		initialized:         true,
 	}
@@ -90,7 +88,7 @@ func NewUi(conf config.Config, client openai.Client) model {
 	m.panels.configSummaryPanel.SetContent("Config path: " + conf.ConfigPath)
 
 	m.UpdateState()
-	m.currentHistoryIndex = len(m.uiState.PromptHistory)
+	m.currentHistoryIndex = len(m.state.PromptHistory)
 	m.loadReviews()
 	m.panels.itemListPanel.model.SetItems(getItems(m.conf, m.reviewList))
 	m.panels.sourceListPanel.SetItems(getSourceItems(m.conf.Sources))
@@ -154,8 +152,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				operation: Remove,
 			}
 		}
-		m.UpdateState()
-		return m, cmd
+		cmds = append(cmds, cmd)
+		m, cmd = m.UpdateState()
+		cmds = append(cmds, cmd)
+		return m, tea.Batch(cmds...)
 	case reviewStateMsg:
 		m.reviewState = msg.state
 	case reviewStackMsg:
@@ -243,11 +243,11 @@ func (m model) View() string {
 	return m.makeView()
 }
 
-func (m *model) UpdateState() (tea.Model, tea.Cmd) {
+func (m *model) UpdateState() (model, tea.Cmd) {
 	m.state = state.LoadState(m.stateFile)
 	m.panels.stateSummaryPanel.SetContent(m.state.ShowUsage(m.conf.ModelCost))
 	m.panels.stateDetailPanel.SetContent(m.state.ShowUsedToken())
-	return m, nil
+	return *m, nil
 }
 
 func (m *model) isReviewExist(id string) bool {
